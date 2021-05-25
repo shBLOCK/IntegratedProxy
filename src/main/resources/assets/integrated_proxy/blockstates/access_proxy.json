@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "normal": {
+      "model": "integrated_proxy:access_proxy"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+itemGroup.integrated_proxy=集成代理器
+
+tile.blocks.integrated_proxy.access_proxy.name=访问代理器
+
+integrated_proxy.gui.access_proxy.relative_mode=相对坐标
+integrated_proxy.gui.access_proxy.absolute_mode=绝对坐标
+integrated_proxy.gui.access_proxy.x=X
+integrated_proxy.gui.access_proxy.y=Y
+integrated_proxy.gui.access_proxy.z=Z
+integrated_proxy.gui.access_proxy.dim=维度
+integrated_proxy.gui.access_proxy.invalid_pos=非法参数
+integrated_proxy.gui.access_proxy.display_pos=X:%d, Y:%d, Z:%d, 维度:%d(%s)
+integrated_proxy.gui.access_proxy.dim_invalid=维度id不存在或世界未加载
+integrated_proxy.gui.access_proxy.can_not_get_dim_name=无法获取维度名称
+integrated_proxy.gui.access_proxy.cross_dim_not_supported=暂时不支持跨纬度访问
