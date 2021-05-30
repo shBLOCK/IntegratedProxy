@@ -71,4 +71,9 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
             }
         }
     }
+
+    @Override
+    public boolean isKeepNBTOnDrop() {
+        return false;
+    }
 }

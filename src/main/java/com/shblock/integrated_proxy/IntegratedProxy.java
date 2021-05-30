@@ -1,13 +1,17 @@
 package com.shblock.integrated_proxy;
 
+import com.shblock.integrated_proxy.block.BlockAccessProxy;
 import com.shblock.integrated_proxy.block.BlockAccessProxyConfig;
+import com.shblock.integrated_proxy.item.ItemBlockAccessProxy;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Items;
+import net.minecraft.item.ItemBlock;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.*;
 import org.apache.logging.log4j.Level;
 import org.cyclops.cyclopscore.config.ConfigHandler;
+import org.cyclops.cyclopscore.config.extendedconfig.BlockItemConfigReference;
 import org.cyclops.cyclopscore.init.ItemCreativeTab;
 import org.cyclops.cyclopscore.init.ModBase;
 import org.cyclops.cyclopscore.init.RecipeHandler;
@@ -62,7 +66,7 @@ public class IntegratedProxy extends ModBase {
 
     @Override
     public CreativeTabs constructDefaultCreativeTab() {
-        return new ItemCreativeTab(this, () -> Items.DIAMOND);
+        return new ItemCreativeTab(this, new BlockItemConfigReference(BlockAccessProxyConfig.class));
     }
 
     @Override

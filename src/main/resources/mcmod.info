@@ -1,5 +1,7 @@
 [
 {
+  "modid": "integrated_proxy",
+  "name": "Integrated Proxy",
   "description": "An addon for Integrated Dynamics that allows you to redirect the part's target to another position.",
   "version": "1.0.0",
   "mcversion": "1.12.2",
@@ -7,7 +9,7 @@
   "updateUrl": "",
   "authorList": ["shBLOCK"],
   "credits": "",
-  "logoFile": "",
+  "logoFile": "assets/integrated_proxy/textures/icon/icon.png",
   "screenshots": []
 }
 ]

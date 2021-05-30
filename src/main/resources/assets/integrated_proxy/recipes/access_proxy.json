@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    ".x.",
+    "xox",
+    ".x."
+  ],
+  "key": {
+    "x": {"item": "integrateddynamics:logic_director"},
+    "o": {"item": "integrateddynamics:variablestore", "data": 0},
+    ".": {"item": "minecraft:ender_pearl"}
+  },
+  "result": {"item": "integrated_proxy:access_proxy", "count": 4}
+}
