@@ -18,7 +18,7 @@ public class ContainerAccessProxy extends TileInventoryContainerConfigurable<Til
     public final int lastXOkId;
     public final int lastYOkId;
     public final int lastZOkId;
-    public final int lastDimOkId;
+    public final int lastDisplayOkId;
 
     public ContainerAccessProxy(InventoryPlayer inventory, TileAccessProxy tile) {
         super(inventory, tile);
@@ -31,16 +31,16 @@ public class ContainerAccessProxy extends TileInventoryContainerConfigurable<Til
         lastXOkId = getNextValueId();
         lastYOkId = getNextValueId();
         lastZOkId = getNextValueId();
-        lastDimOkId = getNextValueId();
+        lastDisplayOkId = getNextValueId();
     }
 
     @Override
     public void detectAndSendChanges() {
         super.detectAndSendChanges();
-        ValueNotifierHelpers.setValue(this, lastXOkId, getTile().variableOk(getTile().evaluator_x) ? 1 : 0);
-        ValueNotifierHelpers.setValue(this, lastYOkId, getTile().variableOk(getTile().evaluator_y) ? 1 : 0);
-        ValueNotifierHelpers.setValue(this, lastZOkId, getTile().variableOk(getTile().evaluator_z) ? 1 : 0);
-        ValueNotifierHelpers.setValue(this, lastDimOkId, getTile().variableOk(getTile().evaluator_dim) ? 1 : 0);
+        ValueNotifierHelpers.setValue(this, lastXOkId, getTile().variableIntegerOk(getTile().evaluator_x) ? 1 : 0);
+        ValueNotifierHelpers.setValue(this, lastYOkId, getTile().variableIntegerOk(getTile().evaluator_y) ? 1 : 0);
+        ValueNotifierHelpers.setValue(this, lastZOkId, getTile().variableIntegerOk(getTile().evaluator_z) ? 1 : 0);
+        ValueNotifierHelpers.setValue(this, lastDisplayOkId, getTile().variableOk(getTile().evaluator_display) ? 1 : 0);
     }
 
     public boolean variableOk(int valueId) {

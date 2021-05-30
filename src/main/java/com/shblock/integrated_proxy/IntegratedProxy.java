@@ -13,8 +13,16 @@ import org.cyclops.cyclopscore.init.ModBase;
 import org.cyclops.cyclopscore.init.RecipeHandler;
 import org.cyclops.cyclopscore.proxy.ICommonProxy;
 import org.cyclops.integrateddynamics.IntegratedDynamics;
+import org.spongepowered.asm.launch.MixinBootstrap;
+import org.spongepowered.asm.mixin.Mixins;
+import org.spongepowered.asm.mixin.Overwrite;
 
-@Mod(modid = IntegratedProxy.MODID, name = IntegratedProxy.NAME, useMetadata = true)
+@Mod(
+        modid = IntegratedProxy.MODID,
+        name = IntegratedProxy.NAME,
+        useMetadata = true,
+        dependencies = "required-after:forge;required-after:cyclopscore;required-after:integrateddynamics;"
+)
 public class IntegratedProxy extends ModBase {
 
     public static final String MODID = "integrated_proxy";
@@ -28,6 +36,11 @@ public class IntegratedProxy extends ModBase {
 
     public IntegratedProxy() {
         super(MODID, NAME);
+    }
+
+    @Override
+    public void postInit(FMLPostInitializationEvent event) {
+        super.postInit(event);
     }
 
     @Mod.EventHandler

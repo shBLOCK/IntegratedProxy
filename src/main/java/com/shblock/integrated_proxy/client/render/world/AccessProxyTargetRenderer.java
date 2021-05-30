@@ -2,8 +2,10 @@ package com.shblock.integrated_proxy.client.render.world;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -14,6 +16,9 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import org.cyclops.cyclopscore.datastructure.DimPos;
+import org.cyclops.integrateddynamics.api.client.render.valuetype.IValueTypeWorldRenderer;
+import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
+import org.cyclops.integrateddynamics.client.render.valuetype.ValueTypeWorldRenderers;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
@@ -23,6 +28,8 @@ public class AccessProxyTargetRenderer {
     private static final AccessProxyTargetRenderer _instance = new AccessProxyTargetRenderer();
 
     private final HashMap<DimPos, DimPos> map = new HashMap<>();
+    private final HashMap<DimPos, IValue> variable_map = new HashMap<>();
+    private final HashMap<DimPos, int[]> rotation_map = new HashMap<>();
 
     public static AccessProxyTargetRenderer getInstance() {
         return _instance;
@@ -32,8 +39,18 @@ public class AccessProxyTargetRenderer {
         this.map.put(proxy, target);
     }
 
+    public void putVariable(DimPos proxy, IValue value) {
+        this.variable_map.put(proxy, value);
+    }
+
+    public void putRotation(DimPos proxy, int[] value) {
+        this.rotation_map.put(proxy, value);
+    }
+
     public void remove(DimPos proxy) {
         this.map.remove(proxy);
+        this.variable_map.remove(proxy);
+        this.rotation_map.remove(proxy);
     }
 
     public DimPos get(BlockPos pos, int dim) {
@@ -59,7 +76,6 @@ public class AccessProxyTargetRenderer {
         double offsetZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double) partialTicks;
 
         for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
-            DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
 
             Vec3d target_vec = new Vec3d(
@@ -80,7 +96,139 @@ public class AccessProxyTargetRenderer {
                 GlStateManager.popMatrix();
             }
         }
-
         GlStateManager.enableTexture2D();
+
+        GlStateManager.enableRescaleNormal();
+        for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
+            DimPos proxy = entry.getKey();
+            DimPos target = entry.getValue();
+            IValue value = this.variable_map.get(proxy);
+            int[] rotation = this.rotation_map.get(proxy);
+            if (rotation == null) {
+                rotation = new int[]{0, 0, 0, 0, 0, 0};
+            }
+
+            GlStateManager.pushMatrix();
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+            if (value != null) {
+                for (EnumFacing facing : EnumFacing.values()) {
+                    GlStateManager.pushMatrix();
+
+                    float scale = 0.08F;
+                    GlStateManager.translate(-offsetX + target.getBlockPos().getX(), -offsetY + target.getBlockPos().getY(), -offsetZ + target.getBlockPos().getZ());
+                    translateToFacing(facing);
+                    GlStateManager.scale(scale, scale, scale);
+//                    GlStateManager.translate(-6.25, 0, -6.25);
+//                    GlStateManager.rotate(rotation[facing.ordinal()] * 90, 0, 1, 0);
+//                    GlStateManager.translate(6.25, 0, 6.25);
+                    rotateSide(facing, rotation);
+                    GlStateManager.rotate(180, 0, 0, 1);
+//                    GlStateManager.rotate(180, 0, 0, 1);
+                    rotateToFacing(facing);
+//                    rotateSide(facing, rotation);
+
+                    IValueTypeWorldRenderer renderer = ValueTypeWorldRenderers.REGISTRY.getRenderer(value.getType());
+                    if (renderer == null) {
+                        renderer = ValueTypeWorldRenderers.DEFAULT;
+                    }
+                    renderer.renderValue(
+                            null,
+                            -offsetX + target.getBlockPos().getX(),
+                            -offsetY + target.getBlockPos().getY(),
+                            -offsetZ + target.getBlockPos().getZ(),
+                            partialTicks,
+                            0,
+                            facing,
+                            null,
+                            value,
+                            TileEntityRendererDispatcher.instance,
+                            1
+                    );
+
+                    GlStateManager.popMatrix();
+                }
+            }
+            GlStateManager.disableRescaleNormal();
+            GlStateManager.popMatrix();
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        }
+    }
+
+    private void translateToFacing(EnumFacing facing) {
+        switch (facing) {
+            case DOWN:
+                GlStateManager.translate(1, -0.01, 0);
+                break;
+            case UP:
+                GlStateManager.translate(1, 1.01, 1);
+                break;
+            case NORTH:
+                GlStateManager.translate(0, 1, 1.01);
+                break;
+            case SOUTH:
+                GlStateManager.translate(1, 1, -0.01);
+                break;
+            case EAST:
+                GlStateManager.translate(1.01, 1, 1);
+                break;
+            case WEST:
+                GlStateManager.translate(-0.01, 1, 0);
+                break;
+        }
+    }
+
+    private void rotateToFacing(EnumFacing facing) {
+        short rotationY = 0;
+        short rotationX = 0;
+        if (facing == EnumFacing.SOUTH) {
+            rotationY = 0;
+        } else if (facing == EnumFacing.NORTH) {
+            rotationY = 180;
+        } else if (facing == EnumFacing.EAST) {
+            rotationY = 90;
+        } else if (facing == EnumFacing.WEST) {
+            rotationY = -90;
+        } else if (facing == EnumFacing.UP) {
+            rotationX = -90;
+        } else if (facing == EnumFacing.DOWN) {
+            rotationX = 90;
+        }
+        GlStateManager.rotate(rotationY, 0.0F, 1.0F, 0.0F);
+        GlStateManager.rotate(rotationX, 1.0F, 0.0F, 0.0F);
+    }
+
+    private void rotateSide(EnumFacing side, int[] rotation) {
+        switch (side) {
+            case UP:
+                GlStateManager.translate(-6.25, 0, -6.25);
+                GlStateManager.rotate(rotation[1] * 90, 0, 1, 0);
+                GlStateManager.translate(6.25, 0, 6.25);
+                break;
+            case DOWN:
+                GlStateManager.translate(-6.25, 0, 6.25);
+                GlStateManager.rotate(rotation[0] * 90, 0, 1, 0);
+                GlStateManager.translate(6.25, 0, -6.25);
+                break;
+            case NORTH:
+                GlStateManager.translate(6.25, -6.25, 0);
+                GlStateManager.rotate(rotation[3] * 90, 0, 0, 1);
+                GlStateManager.translate(-6.25, 6.25, 0);
+                break;
+            case SOUTH:
+                GlStateManager.translate(-6.25, -6.25, 0);
+                GlStateManager.rotate(rotation[2] * 90, 0, 0, 1);
+                GlStateManager.translate(6.25, 6.25, 0);
+                break;
+            case WEST:
+                GlStateManager.translate(0, -6.25, 6.25);
+                GlStateManager.rotate(rotation[4] * 90, 1, 0, 0);
+                GlStateManager.translate(0, 6.25, -6.25);
+                break;
+            case EAST:
+                GlStateManager.translate(0, -6.25, -6.25);
+                GlStateManager.rotate(rotation[5] * 90, 1, 0, 0);
+                GlStateManager.translate(0, 6.25, 6.25);
+                break;
+        }
     }
 }

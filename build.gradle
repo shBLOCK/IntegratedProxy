@@ -35,6 +35,11 @@ repositories {
     }
 }
 
+configurations {
+    embed
+    compile.extendsFrom(embed)
+}
+
 dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
@@ -69,7 +74,17 @@ dependencies {
 //        exclude module: "commons-io"
 //    }
 
-    ("org.spongepowered:mixin:0.8") {
+    embed ("org.spongepowered:mixin:0.8") {
+        exclude module: "asm-commons"
+        exclude module: "asm-tree"
+        exclude module: "launchwrapper"
+        exclude module: "guava"
+        exclude module: "log4j-core"
+        exclude module: "gson"
+        exclude module: "commons-io"
+    }
+
+    compile ("org.spongepowered:mixin:0.8") {
         exclude module: "asm-commons"
         exclude module: "asm-tree"
         exclude module: "launchwrapper"
@@ -125,6 +140,7 @@ minecraft {
 
             arg "--mixin=mixins.integrated_proxy.json"
             arg "--tweakClass=org.spongepowered.asm.launch.MixinTweaker"
+            jvmArg("-Dfml.coreMods.load=com.shblock.integrated_proxy.mixin.MixinLoader")
 
             // Recommended logging data for a userdev environment
             property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
@@ -151,10 +167,12 @@ mixin {
 
 // Example for how to get properties into the manifest for reading by the runtime..
 jar {
+    from configurations.embed.collect { it.isDirectory() ? it : zipTree(it) }
     manifest {
         attributes([
             "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
-            "MixinConfigs": "mixins.integrated_proxy.json",
+//            "MixinConfigs": "mixins.integrated_proxy.json",
+            "FMLCorePlugin": "com.shblock.integrated_proxy.mixin.MixinLoader",
             'FMLCorePluginContainsFMLMod': 'true',
             "ForceLoadAsMod": "true"
         ])
