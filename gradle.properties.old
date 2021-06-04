@@ -1,0 +1,22 @@
+# Sets default memory used for gradle commands. Can be overridden by user or command line properties.
+# This is required to provide enough memory for the Minecraft decompilation process.
+org.gradle.jvmargs=-Xmx3G
+org.gradle.daemon=false
+
+systemProp.http.proxyHost=127.0.0.1
+systemProp.http.proxyPort=10809
+
+mc_version=1.16.5
+#cyclopscore_version=1.11.6-61
+##commoncapabilities_version=2.4.8-368
+#commoncapabilities_version=2.7.0-22
+#integrateddynamics_version=1.8.0-78
+##integrateddynamics_version=1.1.5-1452
+#integrateddynamicscompat_version=1.0.0-8
+#integratedterminals_version=1.2.3-46
+#integratedtunnels_version=1.8.0-55
+#integratedcrafting_version=1.0.14-22
+
+integrateddynamics_version=1.16.5-1.7.1-61
+cyclopscore_version=1.16.5-1.11.5-54
+commoncapabilities_version=1.16.5-2.6.0-18

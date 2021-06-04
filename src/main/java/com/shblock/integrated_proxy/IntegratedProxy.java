@@ -1,82 +1,74 @@
 package com.shblock.integrated_proxy;
 
-import com.shblock.integrated_proxy.block.BlockAccessProxy;
 import com.shblock.integrated_proxy.block.BlockAccessProxyConfig;
-import com.shblock.integrated_proxy.item.ItemBlockAccessProxy;
-import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.init.Items;
-import net.minecraft.item.ItemBlock;
+import com.shblock.integrated_proxy.proxy.ClientProxy;
+import com.shblock.integrated_proxy.proxy.CommonProxy;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.Items;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.SidedProxy;
-import net.minecraftforge.fml.common.event.*;
 import org.apache.logging.log4j.Level;
 import org.cyclops.cyclopscore.config.ConfigHandler;
-import org.cyclops.cyclopscore.config.extendedconfig.BlockItemConfigReference;
-import org.cyclops.cyclopscore.init.ItemCreativeTab;
-import org.cyclops.cyclopscore.init.ModBase;
-import org.cyclops.cyclopscore.init.RecipeHandler;
+import org.cyclops.cyclopscore.init.ItemGroupMod;
+import org.cyclops.cyclopscore.init.ModBaseVersionable;
+import org.cyclops.cyclopscore.proxy.IClientProxy;
 import org.cyclops.cyclopscore.proxy.ICommonProxy;
-import org.cyclops.integrateddynamics.IntegratedDynamics;
-import org.spongepowered.asm.launch.MixinBootstrap;
-import org.spongepowered.asm.mixin.Mixins;
-import org.spongepowered.asm.mixin.Overwrite;
 
-@Mod(
-        modid = IntegratedProxy.MODID,
-        name = IntegratedProxy.NAME,
-        useMetadata = true,
-        dependencies = "required-after:forge;required-after:cyclopscore;required-after:integrateddynamics;"
-)
-public class IntegratedProxy extends ModBase {
+@Mod(IntegratedProxy.MODID)
+public class IntegratedProxy extends ModBaseVersionable<IntegratedProxy> {
 
     public static final String MODID = "integrated_proxy";
-    public static final String NAME = "Integrated Proxy";
+//    public static final String NAME = "Integrated Proxy";
 
-    @SidedProxy(clientSide = "com.shblock.integrated_proxy.proxy.ClientProxy", serverSide = "com.shblock.integrated_proxy.proxy.CommonProxy")
-    public static ICommonProxy proxy;
-
-    @Mod.Instance(value = MODID)
     public static IntegratedProxy _instance;
 
     public IntegratedProxy() {
-        super(MODID, NAME);
+        super(MODID, (instance) -> _instance = instance);
+    }
+
+//    @Override
+//    public void postInit(FMLPostInitializationEvent event) {
+//        super.postInit(event);
+//    }
+//
+//    @Mod.EventHandler
+//    @Override
+//    public final void preInit(FMLPreInitializationEvent event) {
+//        super.preInit(event);
+//    }
+//
+//    @Mod.EventHandler
+//    @Override
+//    public final void init(FMLInitializationEvent event) {
+//        super.init(event);
+//    }
+//
+//    @Override
+//    protected RecipeHandler constructRecipeHandler() {
+//        return null;
+//    }
+
+    @Override
+    public ItemGroup constructDefaultItemGroup() {
+        return new ItemGroupMod(this, () -> Items.DIAMOND);
     }
 
     @Override
-    public void postInit(FMLPostInitializationEvent event) {
-        super.postInit(event);
-    }
-
-    @Mod.EventHandler
-    @Override
-    public final void preInit(FMLPreInitializationEvent event) {
-        super.preInit(event);
-    }
-
-    @Mod.EventHandler
-    @Override
-    public final void init(FMLInitializationEvent event) {
-        super.init(event);
+    public void onConfigsRegister(ConfigHandler configHandler) {
+        super.onConfigsRegister(configHandler);
+        configHandler.addConfigurable(new BlockAccessProxyConfig());
     }
 
     @Override
-    protected RecipeHandler constructRecipeHandler() {
-        return null;
+    @OnlyIn(Dist.CLIENT)
+    protected IClientProxy constructClientProxy() {
+        return new ClientProxy();
     }
 
     @Override
-    public CreativeTabs constructDefaultCreativeTab() {
-        return new ItemCreativeTab(this, new BlockItemConfigReference(BlockAccessProxyConfig.class));
-    }
-
-    @Override
-    public void onMainConfigsRegister(ConfigHandler configHandler) {
-        configHandler.add(new BlockAccessProxyConfig());
-    }
-
-    @Override
-    public ICommonProxy getProxy() {
-        return proxy;
+    protected ICommonProxy constructCommonProxy() {
+        return new CommonProxy();
     }
 
     public static void clog(String message) {

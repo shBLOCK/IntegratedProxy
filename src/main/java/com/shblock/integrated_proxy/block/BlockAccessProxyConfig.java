@@ -1,29 +1,22 @@
 package com.shblock.integrated_proxy.block;
 
 import com.shblock.integrated_proxy.IntegratedProxy;
-import com.shblock.integrated_proxy.item.ItemBlockAccessProxy;
-import com.shblock.integrated_proxy.tileentity.TileAccessProxy;
-import net.minecraft.item.Item;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.cyclops.cyclopscore.config.extendedconfig.BlockContainerConfig;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.material.Material;
+import org.cyclops.cyclopscore.config.extendedconfig.BlockConfig;
 
-public class BlockAccessProxyConfig extends BlockContainerConfig {
+public class BlockAccessProxyConfig extends BlockConfig {
 
-    public static BlockAccessProxyConfig _instance;
+//    public static BlockAccessProxyConfig _instance;
 
     public BlockAccessProxyConfig() {
         super(
             IntegratedProxy._instance,
-            true,
             "access_proxy",
-            null,
-            BlockAccessProxy.class
+            eConfig -> new BlockAccessProxy(
+                    AbstractBlock.Properties.create(Material.ROCK)
+            ),
+            getDefaultItemConstructor(IntegratedProxy._instance)
         );
-    }
-
-    @Override
-    public Class<? extends Item> getItemBlockClass() {
-        return ItemBlockAccessProxy.class;
     }
 }
