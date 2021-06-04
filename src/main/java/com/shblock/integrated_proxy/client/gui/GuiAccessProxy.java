@@ -7,19 +7,23 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.common.DimensionManager;
 import org.cyclops.cyclopscore.client.gui.container.GuiContainerConfigurable;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.RenderHelpers;
 import org.cyclops.cyclopscore.helper.ValueNotifierHelpers;
 import org.cyclops.cyclopscore.helper.WorldHelpers;
+import org.cyclops.integrateddynamics.core.client.gui.ContainerScreenActiveVariableBase;
 import org.cyclops.integrateddynamics.core.client.gui.container.DisplayErrorsComponent;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
+import org.cyclops.integrateddynamics.inventory.container.ContainerProxy;
 
 import java.util.Set;
 
-public class GuiAccessProxy extends GuiContainerConfigurable<ContainerAccessProxy> {
+public class GuiAccessProxy extends ContainerScreenActiveVariableBase<ContainerAccessProxy> {
     public DisplayErrorsComponent errorX = new DisplayErrorsComponent();
     public DisplayErrorsComponent errorY = new DisplayErrorsComponent();
     public DisplayErrorsComponent errorZ = new DisplayErrorsComponent();
@@ -28,8 +32,8 @@ public class GuiAccessProxy extends GuiContainerConfigurable<ContainerAccessProx
     private static final int ERRORS_X = 20;
     private static final int ERRORS_Y = 71;
 
-    public GuiAccessProxy(InventoryPlayer inventory, TileAccessProxy tile) {
-        super(new ContainerAccessProxy(inventory, tile));
+    public GuiAccessProxy(ContainerAccessProxy container, PlayerInventory inventory, ITextComponent title) {
+        super(container, inventory, title);
     }
 
     @Override
@@ -51,7 +55,7 @@ public class GuiAccessProxy extends GuiContainerConfigurable<ContainerAccessProx
     protected void mouseReleased(int mouseX, int mouseY, int state) {
         super.mouseReleased(mouseX, mouseY, state);
         if (RenderHelpers.isPointInRegion(offsetX + this.guiLeft + 44, offsetY + this.guiTop + 20, 90, 16, mouseX - this.offsetX, mouseY - this.offsetY) && state == 0) {
-            ValueNotifierHelpers.setValue(getContainer(), getContainer().lastPosModeValueId, this.getContainer().getLastPosModeValue() == 0 ? 1 : 0);
+            ValueNotifierHelpers.setValue(this, lastPosModeValueId, this.getLastPosModeValue() == 0 ? 1 : 0);
         }
     }
 

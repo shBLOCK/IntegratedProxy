@@ -1,17 +1,23 @@
 package com.shblock.integrated_proxy.client.render.world;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
@@ -59,44 +65,49 @@ public class AccessProxyTargetRenderer {
 
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.player.equals(Minecraft.getMinecraft().player) && event.player.world.isRemote) {
+        if (event.getPlayer().equals(Minecraft.getInstance().player) && event.getPlayer().world.isRemote) {
             this.map.clear();
         }
     }
 
     @SubscribeEvent
     public void onRender(RenderWorldLastEvent event) {
-        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        GlStateManager.disableTexture2D();
+        GlStateManager.blendFuncSeparate(
+                GlStateManager.SourceFactor.SRC_ALPHA.param,
+                GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA.param,
+                GlStateManager.SourceFactor.ONE.param,
+                GlStateManager.DestFactor.ZERO.param
+        );
+        GlStateManager.disableTexture();
 
-        EntityPlayer player = Minecraft.getMinecraft().player;
+        PlayerEntity player = Minecraft.getInstance().player;
         float partialTicks = event.getPartialTicks();
-        double offsetX = player.lastTickPosX + (player.posX - player.lastTickPosX) * (double) partialTicks;
-        double offsetY = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double) partialTicks;
-        double offsetZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double) partialTicks;
+        double offsetX = player.lastTickPosX + (player.getPosX() - player.lastTickPosX) * (double) partialTicks;
+        double offsetY = player.lastTickPosY + (player.getPosY() - player.lastTickPosY) * (double) partialTicks;
+        double offsetZ = player.lastTickPosZ + (player.getPosZ() - player.lastTickPosZ) * (double) partialTicks;
 
         for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
             DimPos target = entry.getValue();
 
-            Vec3d target_vec = new Vec3d(
+            Vector3d target_vec = new Vector3d(
                     target.getBlockPos().getX(),
                     target.getBlockPos().getY(),
                     target.getBlockPos().getZ()
             );
-            GlStateManager.glLineWidth((float) (8.0d / player.getPositionVector().distanceTo(target_vec)));
+            GlStateManager.lineWidth((float) (8.0d / player.getPositionVec().distanceTo(target_vec)));
 
-            if (target.getDimensionId() == Minecraft.getMinecraft().world.provider.getDimension()) {
+            if (target.getWorld().equals(Minecraft.getInstance().world.getProviderName())) {
                 GlStateManager.pushMatrix();
                 Tessellator tessellator = Tessellator.getInstance();
                 BufferBuilder bufferbuilder = tessellator.getBuffer();
                 bufferbuilder.begin(GL11.GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
-                GlStateManager.translate(-offsetX + target.getBlockPos().getX(), -offsetY + target.getBlockPos().getY(), -offsetZ + target.getBlockPos().getZ());
-                RenderGlobal.drawBoundingBox(bufferbuilder, -0.01D, -0.01D, -0.01D, 1.01D, 1.01D, 1.01D, 0.17F, 0.8F, 0.69F, 0.8F);
+                GlStateManager.translated(-offsetX + target.getBlockPos().getX(), -offsetY + target.getBlockPos().getY(), -offsetZ + target.getBlockPos().getZ());
+                WorldRenderer.drawBoundingBox(event.getMatrixStack(), bufferbuilder, -0.01D, -0.01D, -0.01D, 1.01D, 1.01D, 1.01D, 0.17F, 0.8F, 0.69F, 0.8F);
                 tessellator.draw();
                 GlStateManager.popMatrix();
             }
         }
-        GlStateManager.enableTexture2D();
+        GlStateManager.enableTexture();
 
         GlStateManager.enableRescaleNormal();
         for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
@@ -109,20 +120,20 @@ public class AccessProxyTargetRenderer {
             }
 
             GlStateManager.pushMatrix();
-            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+            GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
             if (value != null) {
-                for (EnumFacing facing : EnumFacing.values()) {
+                for (Direction facing : Direction.values()) {
                     GlStateManager.pushMatrix();
 
                     float scale = 0.08F;
-                    GlStateManager.translate(-offsetX + target.getBlockPos().getX(), -offsetY + target.getBlockPos().getY(), -offsetZ + target.getBlockPos().getZ());
+                    GlStateManager.translated(-offsetX + target.getBlockPos().getX(), -offsetY + target.getBlockPos().getY(), -offsetZ + target.getBlockPos().getZ());
                     translateToFacing(facing);
-                    GlStateManager.scale(scale, scale, scale);
-//                    GlStateManager.translate(-6.25, 0, -6.25);
+                    GlStateManager.scaled(scale, scale, scale);
+//                    GlStateManager.translate(-6.25F, 0, -6.25F);
 //                    GlStateManager.rotate(rotation[facing.ordinal()] * 90, 0, 1, 0);
-//                    GlStateManager.translate(6.25, 0, 6.25);
+//                    GlStateManager.translate(6.25F, 0, 6.25F);
                     rotateSide(facing, rotation);
-                    GlStateManager.rotate(180, 0, 0, 1);
+                    GlStateManager.rotatef(180, 0, 0, 1);
 //                    GlStateManager.rotate(180, 0, 0, 1);
                     rotateToFacing(facing);
 //                    rotateSide(facing, rotation);
@@ -133,16 +144,16 @@ public class AccessProxyTargetRenderer {
                     }
                     renderer.renderValue(
                             null,
-                            -offsetX + target.getBlockPos().getX(),
-                            -offsetY + target.getBlockPos().getY(),
-                            -offsetZ + target.getBlockPos().getZ(),
-                            partialTicks,
-                            0,
+                            null,
                             facing,
                             null,
                             value,
-                            TileEntityRendererDispatcher.instance,
-                            1
+                            partialTicks,
+                            event.getMatrixStack(), 
+                            null,
+                            1,
+                            1,
+                            1.0F
                     );
 
                     GlStateManager.popMatrix();
@@ -150,84 +161,84 @@ public class AccessProxyTargetRenderer {
             }
             GlStateManager.disableRescaleNormal();
             GlStateManager.popMatrix();
-            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+            GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         }
     }
 
-    private void translateToFacing(EnumFacing facing) {
+    private void translateToFacing(Direction facing) {
         switch (facing) {
             case DOWN:
-                GlStateManager.translate(1, -0.01, 0);
+                GlStateManager.translatef(1, -0.01F, 0);
                 break;
             case UP:
-                GlStateManager.translate(1, 1.01, 1);
+                GlStateManager.translatef(1, 1.01F, 1);
                 break;
             case NORTH:
-                GlStateManager.translate(0, 1, 1.01);
+                GlStateManager.translatef(0, 1, 1.01F);
                 break;
             case SOUTH:
-                GlStateManager.translate(1, 1, -0.01);
+                GlStateManager.translatef(1, 1, -0.01F);
                 break;
             case EAST:
-                GlStateManager.translate(1.01, 1, 1);
+                GlStateManager.translatef(1.01F, 1, 1);
                 break;
             case WEST:
-                GlStateManager.translate(-0.01, 1, 0);
+                GlStateManager.translatef(-0.01F, 1, 0);
                 break;
         }
     }
 
-    private void rotateToFacing(EnumFacing facing) {
+    private void rotateToFacing(Direction facing) {
         short rotationY = 0;
         short rotationX = 0;
-        if (facing == EnumFacing.SOUTH) {
+        if (facing == Direction.SOUTH) {
             rotationY = 0;
-        } else if (facing == EnumFacing.NORTH) {
+        } else if (facing == Direction.NORTH) {
             rotationY = 180;
-        } else if (facing == EnumFacing.EAST) {
+        } else if (facing == Direction.EAST) {
             rotationY = 90;
-        } else if (facing == EnumFacing.WEST) {
+        } else if (facing == Direction.WEST) {
             rotationY = -90;
-        } else if (facing == EnumFacing.UP) {
+        } else if (facing == Direction.UP) {
             rotationX = -90;
-        } else if (facing == EnumFacing.DOWN) {
+        } else if (facing == Direction.DOWN) {
             rotationX = 90;
         }
-        GlStateManager.rotate(rotationY, 0.0F, 1.0F, 0.0F);
-        GlStateManager.rotate(rotationX, 1.0F, 0.0F, 0.0F);
+        GlStateManager.rotatef(rotationY, 0.0F, 1.0F, 0.0F);
+        GlStateManager.rotatef(rotationX, 1.0F, 0.0F, 0.0F);
     }
 
-    private void rotateSide(EnumFacing side, int[] rotation) {
+    private void rotateSide(Direction side, int[] rotation) {
         switch (side) {
             case UP:
-                GlStateManager.translate(-6.25, 0, -6.25);
-                GlStateManager.rotate(rotation[1] * 90, 0, 1, 0);
-                GlStateManager.translate(6.25, 0, 6.25);
+                GlStateManager.translatef(-6.25F, 0, -6.25F);
+                GlStateManager.rotatef(rotation[1] * 90, 0, 1, 0);
+                GlStateManager.translatef(6.25F, 0, 6.25F);
                 break;
             case DOWN:
-                GlStateManager.translate(-6.25, 0, 6.25);
-                GlStateManager.rotate(rotation[0] * 90, 0, 1, 0);
-                GlStateManager.translate(6.25, 0, -6.25);
+                GlStateManager.translatef(-6.25F, 0, 6.25F);
+                GlStateManager.rotatef(rotation[0] * 90, 0, 1, 0);
+                GlStateManager.translatef(6.25F, 0, -6.25F);
                 break;
             case NORTH:
-                GlStateManager.translate(6.25, -6.25, 0);
-                GlStateManager.rotate(rotation[3] * 90, 0, 0, 1);
-                GlStateManager.translate(-6.25, 6.25, 0);
+                GlStateManager.translatef(6.25F, -6.25F, 0);
+                GlStateManager.rotatef(rotation[3] * 90, 0, 0, 1);
+                GlStateManager.translatef(-6.25F, 6.25F, 0);
                 break;
             case SOUTH:
-                GlStateManager.translate(-6.25, -6.25, 0);
-                GlStateManager.rotate(rotation[2] * 90, 0, 0, 1);
-                GlStateManager.translate(6.25, 6.25, 0);
+                GlStateManager.translatef(-6.25F, -6.25F, 0);
+                GlStateManager.rotatef(rotation[2] * 90, 0, 0, 1);
+                GlStateManager.translatef(6.25F, 6.25F, 0);
                 break;
             case WEST:
-                GlStateManager.translate(0, -6.25, 6.25);
-                GlStateManager.rotate(rotation[4] * 90, 1, 0, 0);
-                GlStateManager.translate(0, 6.25, -6.25);
+                GlStateManager.translatef(0, -6.25F, 6.25F);
+                GlStateManager.rotatef(rotation[4] * 90, 1, 0, 0);
+                GlStateManager.translatef(0, 6.25F, -6.25F);
                 break;
             case EAST:
-                GlStateManager.translate(0, -6.25, -6.25);
-                GlStateManager.rotate(rotation[5] * 90, 1, 0, 0);
-                GlStateManager.translate(0, 6.25, 6.25);
+                GlStateManager.translatef(0, -6.25F, -6.25F);
+                GlStateManager.rotatef(rotation[5] * 90, 1, 0, 0);
+                GlStateManager.translatef(0, 6.25F, 6.25F);
                 break;
         }
     }
