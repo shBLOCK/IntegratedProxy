@@ -12,6 +12,7 @@ import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
 import org.cyclops.integrateddynamics.core.network.TileNetworkElement;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 public class AccessProxyNetworkElement extends TileNetworkElement<TileAccessProxy> implements IEventListenableNetworkElement<TileAccessProxy> {
 
@@ -22,7 +23,7 @@ public class AccessProxyNetworkElement extends TileNetworkElement<TileAccessProx
     @Override
     public boolean onNetworkAddition(INetwork network) {
         if (super.onNetworkAddition(network)) {
-            IPartNetwork partNetwork = NetworkHelpers.getPartNetwork(network);
+            IPartNetwork partNetwork = NetworkHelpers.getPartNetwork(network).orElse(null);
             if (partNetwork == null) {
                 return false;
             }
@@ -38,7 +39,7 @@ public class AccessProxyNetworkElement extends TileNetworkElement<TileAccessProx
     @Override
     public void onNetworkRemoval(INetwork network) {
         super.onNetworkRemoval(network);
-        IPartNetwork partNetwork = NetworkHelpers.getPartNetwork(network);
+        IPartNetwork partNetwork = NetworkHelpers.getPartNetwork(network).orElse(null);
         if (partNetwork != null) {
             partNetwork.removeVariableContainer(getPos());
         }
@@ -46,7 +47,7 @@ public class AccessProxyNetworkElement extends TileNetworkElement<TileAccessProx
 
     @Nullable
     @Override
-    public TileAccessProxy getNetworkEventListener() {
+    public Optional<TileAccessProxy> getNetworkEventListener() {
         return getTile();
     }
 

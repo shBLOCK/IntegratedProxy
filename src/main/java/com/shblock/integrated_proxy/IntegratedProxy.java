@@ -1,8 +1,10 @@
 package com.shblock.integrated_proxy;
 
 import com.shblock.integrated_proxy.block.BlockAccessProxyConfig;
+import com.shblock.integrated_proxy.inventory.container.ContainerAccessProxyConfig;
 import com.shblock.integrated_proxy.proxy.ClientProxy;
 import com.shblock.integrated_proxy.proxy.CommonProxy;
+import com.shblock.integrated_proxy.tileentity.TileAccessProxyConfig;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
@@ -10,6 +12,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.Level;
 import org.cyclops.cyclopscore.config.ConfigHandler;
+import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.init.ItemGroupMod;
 import org.cyclops.cyclopscore.init.ModBaseVersionable;
 import org.cyclops.cyclopscore.proxy.IClientProxy;
@@ -51,13 +54,15 @@ public class IntegratedProxy extends ModBaseVersionable<IntegratedProxy> {
 
     @Override
     public ItemGroup constructDefaultItemGroup() {
-        return new ItemGroupMod(this, () -> Items.DIAMOND);
+        return new ItemGroupMod(this, () -> IPRegistryEntries.ITEM_ACCESS_PROXY);
     }
 
     @Override
     public void onConfigsRegister(ConfigHandler configHandler) {
         super.onConfigsRegister(configHandler);
         configHandler.addConfigurable(new BlockAccessProxyConfig());
+        configHandler.addConfigurable(new TileAccessProxyConfig());
+        configHandler.addConfigurable(new ContainerAccessProxyConfig());
     }
 
     @Override

@@ -50,6 +50,8 @@ minecraft {
         client {
             workingDirectory project.file('run')
 
+            arg "-mixin.config=mixins.integrated_proxy.mod.json"
+
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed. 
             // "SCAN": For mods scan.
@@ -71,6 +73,8 @@ minecraft {
 
         server {
             workingDirectory project.file('run')
+
+            arg "-mixin.config=mixins.integrated_proxy.mod.json"
 
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed. 

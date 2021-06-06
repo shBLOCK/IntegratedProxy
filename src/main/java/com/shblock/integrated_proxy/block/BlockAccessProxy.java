@@ -1,17 +1,27 @@
 package com.shblock.integrated_proxy.block;
 
+import com.shblock.integrated_proxy.client.gui.GuiAccessProxy;
+import com.shblock.integrated_proxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integrated_proxy.tileentity.TileAccessProxy;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.cyclops.integrateddynamics.core.block.BlockTileGuiCabled;
 import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
+
+import javax.annotation.Nullable;
 
 public class BlockAccessProxy extends BlockTileGuiCabled {
 
@@ -40,21 +50,22 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
             if (world.getTileEntity(pos) == null) {
                 return;
             }
+            System.out.println("remove render");
             ((TileAccessProxy) world.getTileEntity(pos)).sendRemoveRenderPacket();
             ((TileAccessProxy) world.getTileEntity(pos)).unRegisterEventHandle();
         }
     }
 
     @Override
-    public void onPlayerDestroy(IWorld world, BlockPos pos, BlockState blockState) {
+    public void onBlockHarvested(World world, BlockPos pos, BlockState blockState, PlayerEntity player) {
         onDestroy(world, pos);
-        super.onPlayerDestroy(world, pos, blockState);
+        super.onBlockHarvested(world, pos, blockState, player);
     }
 
     @Override
-    public void onExplosionDestroy(World world, BlockPos pos, Explosion explosion) {
+    public void onBlockExploded(BlockState state, World world, BlockPos pos, Explosion explosion) {
         onDestroy(world, pos);
-        super.onExplosionDestroy(world, pos, explosion);
+        super.onBlockExploded(state, world, pos, explosion);
     }
 
     @Override

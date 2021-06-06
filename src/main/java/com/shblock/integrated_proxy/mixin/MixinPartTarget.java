@@ -15,7 +15,7 @@ public class MixinPartTarget {
     @Inject(at = @At("HEAD"), method = "getTarget()Lorg/cyclops/integrateddynamics/api/part/PartPos;", cancellable = true, remap = false)
     private void getTarget(CallbackInfoReturnable<PartPos> callback) {
         PartPos orginal_pos = target;
-        TileEntity te = orginal_pos.getPos().getWorld().getTileEntity(orginal_pos.getPos().getBlockPos());
+        TileEntity te = orginal_pos.getPos().getWorld(false).getTileEntity(orginal_pos.getPos().getBlockPos());
         if (te instanceof TileAccessProxy) {
             callback.setReturnValue(PartPos.of(((TileAccessProxy) te).target, orginal_pos.getSide()));
         }

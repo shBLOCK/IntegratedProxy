@@ -1,11 +1,10 @@
 package com.shblock.integrated_proxy.item;
 
 import net.minecraft.block.Block;
-import net.minecraft.item.ItemBlock;
+import net.minecraft.item.BlockItem;
 
-public class ItemBlockAccessProxy extends ItemBlock {
-    public ItemBlockAccessProxy(Block block) {
-        super(block);
-        this.setMaxStackSize(64);
+public class ItemBlockAccessProxy extends BlockItem {
+    public ItemBlockAccessProxy(Block block, Properties builder) {
+        super(block, builder);
     }
 }

@@ -1,24 +1,31 @@
 package com.shblock.integrated_proxy.tileentity;
 
+import com.shblock.integrated_proxy.IPRegistryEntries;
 import com.shblock.integrated_proxy.IntegratedProxy;
+import com.shblock.integrated_proxy.helper.DimPosHelper;
 import com.shblock.integrated_proxy.id_network.AccessProxyNetworkElement;
+import com.shblock.integrated_proxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integrated_proxy.network.packet.RemoveProxyRenderPacket;
 import com.shblock.integrated_proxy.network.packet.UpdateProxyDisplayRotationPacket;
 import com.shblock.integrated_proxy.network.packet.UpdateProxyDisplayValuePacket;
 import com.shblock.integrated_proxy.network.packet.UpdateProxyRenderPacket;
-import com.typesafe.config.ConfigException;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagIntArray;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.INamedContainerProvider;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.BlockEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
@@ -33,7 +40,6 @@ import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkE
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerConfig;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerDefault;
-import org.cyclops.integrateddynamics.capability.variablefacade.VariableFacadeHolderConfig;
 import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
@@ -41,11 +47,13 @@ import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
-public class TileAccessProxy extends TileCableConnectableInventory implements IDirtyMarkListener, INetworkEventListener<AccessProxyNetworkElement> {
+public class TileAccessProxy extends TileCableConnectableInventory implements IDirtyMarkListener, INetworkEventListener<AccessProxyNetworkElement>, INamedContainerProvider {
 
     public static final int SLOT_X = 0;
     public static final int SLOT_Y = 1;
@@ -65,79 +73,78 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public int[] display_rotations = new int[]{0, 0, 0, 0, 0, 0};
 
     public TileAccessProxy() {
-        super(4, "variables", 1);
-        this.inventory.addDirtyMarkListener(this);
+        super(IPRegistryEntries.TILE_ACCESS_PROXY,4, 1);
+        this.getInventory().addDirtyMarkListener(this);
 
-        this.addCapabilityInternal(NetworkElementProviderConfig.CAPABILITY, new NetworkElementProviderSingleton() {
+        addCapabilityInternal(NetworkElementProviderConfig.CAPABILITY, LazyOptional.of(() -> new NetworkElementProviderSingleton() {
+            @Override
             public INetworkElement createNetworkElement(World world, BlockPos blockPos) {
                 return new AccessProxyNetworkElement(DimPos.of(world, blockPos));
             }
-        });
+        }));
         this.variableContainer = new VariableContainerDefault();
-        this.addCapabilityInternal(VariableContainerConfig.CAPABILITY, this.variableContainer);
-        this.evaluator_x = new InventoryVariableEvaluator<>(this, SLOT_X, ValueTypes.INTEGER);
-        this.evaluator_y = new InventoryVariableEvaluator<>(this, SLOT_Y, ValueTypes.INTEGER);
-        this.evaluator_z = new InventoryVariableEvaluator<>(this, SLOT_Z, ValueTypes.INTEGER);
-        this.evaluator_display = new InventoryVariableEvaluator<>(this, SLOT_DISPLAY, ValueTypes.CATEGORY_ANY);
+        addCapabilityInternal(VariableContainerConfig.CAPABILITY, LazyOptional.of(() -> variableContainer));
+        this.evaluator_x = new InventoryVariableEvaluator<>(getInventory(), SLOT_X, ValueTypes.INTEGER);
+        this.evaluator_y = new InventoryVariableEvaluator<>(getInventory(), SLOT_Y, ValueTypes.INTEGER);
+        this.evaluator_z = new InventoryVariableEvaluator<>(getInventory(), SLOT_Z, ValueTypes.INTEGER);
+        this.evaluator_display = new InventoryVariableEvaluator<>(getInventory(), SLOT_DISPLAY, ValueTypes.CATEGORY_ANY);
+    }
+
+
+
+//    @Override
+//    public boolean isItemValidForSlot(int index, ItemStack stack) {
+//        return super.isItemValidForSlot(index, stack) && (stack.isEmpty() || stack.hasCapability(VariableFacadeHolderConfig.CAPABILITY, (EnumFacing)null));
+//    }
+
+
+
+//    @Override
+//    public boolean canInsertItem(int slot, ItemStack itemStack, EnumFacing side) {
+//        return false;
+//    }
+//
+//    @Override
+//    public boolean canExtractItem(int slot, ItemStack itemStack, EnumFacing side) {
+//        return false;
+//    }
+
+
+    @Override
+    public CompoundNBT writeToItemStack(CompoundNBT tag) {
+        return new CompoundNBT();
     }
 
     @Override
-    public boolean isItemValidForSlot(int index, ItemStack stack) {
-        return super.isItemValidForSlot(index, stack) && (stack.isEmpty() || stack.hasCapability(VariableFacadeHolderConfig.CAPABILITY, (EnumFacing)null));
-    }
-
-    @Override
-    public boolean canInsertItem(int slot, ItemStack itemStack, EnumFacing side) {
-        return false;
-    }
-
-    @Override
-    public boolean canExtractItem(int slot, ItemStack itemStack, EnumFacing side) {
-        return false;
-    }
-
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound tag) {
-        tag = super.writeToNBT(tag);
-        tag.setInteger("pos_mode", this.pos_mode);
+    public CompoundNBT write(CompoundNBT tag) {
+        tag = super.write(tag);
+        tag.putInt("pos_mode", this.pos_mode);
         NBTClassType.writeNbt(List.class, "errors_x", evaluator_x.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_y", evaluator_y.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_z", evaluator_z.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_display", evaluator_display.getErrors(), tag);
-        tag.setIntArray("display_rotations", this.display_rotations);
+        tag.putIntArray("display_rotations", this.display_rotations);
 
         if (getDisplayValue() != null) {
 //            tag.setString("displayValueType", value.getType().getTranslationKey());
 //            tag.setString("displayValue", ValueHelpers.serializeRaw(value));
-            tag.setTag("displayValue", ValueHelpers.serialize(getDisplayValue()));
+            tag.put("displayValue", ValueHelpers.serialize(getDisplayValue()));
         }
 
         return tag;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound tag) {
-        super.readFromNBT(tag);
-        this.pos_mode = tag.getInteger("pos_mode");
+    public void read(CompoundNBT tag) {
+        super.read(tag);
+        this.pos_mode = tag.getInt("pos_mode");
         this.evaluator_x.setErrors(NBTClassType.readNbt(List.class, "errors_x", tag));
         this.evaluator_y.setErrors(NBTClassType.readNbt(List.class, "errors_y", tag));
         this.evaluator_z.setErrors(NBTClassType.readNbt(List.class, "errors_z", tag));
         this.evaluator_display.setErrors(NBTClassType.readNbt(List.class, "errors_display", tag));
         this.display_rotations = tag.getIntArray("display_rotations");
-//        if (tag.hasKey("displayValueType", MinecraftHelpers.NBTTag_Types.NBTTagString.ordinal()) && tag.hasKey("displayValue", MinecraftHelpers.NBTTag_Types.NBTTagString.ordinal())) {
-//            IValueType valueType = ValueTypes.REGISTRY.getValueType(tag.getString("displayValueType"));
-//            if (valueType != null) {
-//                String serializedValue = tag.getString("displayValue");
-//                L10NHelpers.UnlocalizedString deserializationError = valueType.canDeserialize(serializedValue);
-//                if (deserializationError == null) {
-//                    this.setDisplayValue(ValueHelpers.deserializeRaw(valueType, serializedValue));
-//                }
-//            }
-//        } else {
-//            this.setDisplayValue(null);
-//        }
-        if (tag.hasKey("displayValue", MinecraftHelpers.NBTTag_Types.NBTTagCompound.ordinal())) {
-            setDisplayValue(ValueHelpers.deserialize(tag.getCompoundTag("displayValue")));
+        if (tag.contains("displayValue", Constants.NBT.TAG_COMPOUND)) {
+            setDisplayValue(ValueHelpers.deserialize(tag.getCompound("displayValue")));
         } else {
             setDisplayValue(null);
         }
@@ -164,7 +171,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
-        this.variableContainer.refreshVariables(this.getNetwork(), this.inventory, sendVariablesUpdateEvent);
+        this.variableContainer.refreshVariables(this.getNetwork(), getInventory(), sendVariablesUpdateEvent);
         this.evaluator_x.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
         this.evaluator_y.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
         this.evaluator_z.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
@@ -177,7 +184,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     private void updateTarget() {
         if (!getWorld().isRemote) {
-            DimPos old_target = this.target == null ? null : DimPos.of(this.target.getDimensionId(), this.target.getBlockPos());
+            DimPos old_target = this.target == null ? null : DimPos.of(this.target.getWorld(false), this.target.getBlockPos());
             try {
                 if (this.pos_mode == 1) {
                     this.target = DimPos.of(
@@ -213,6 +220,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     private boolean isVariableAvailable(InventoryVariableEvaluator<ValueTypeInteger.ValueInteger> evaluator) {
+        if (getNetwork() == null) {
+            return false;
+        }
         if (evaluator.getVariable(getNetwork()) == null) {
             return false;
         }
@@ -220,6 +230,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public boolean variableOk(InventoryVariableEvaluator<IValue> evaluator) {
+        if (getNetwork() == null) {
+            return false;
+        }
         if (evaluator.getVariable(getNetwork()) == null) {
             return false;
         }
@@ -228,6 +241,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public boolean variableIntegerOk(InventoryVariableEvaluator<ValueTypeInteger.ValueInteger> evaluator) {
+        if (getNetwork() == null) {
+            return false;
+        }
         if (evaluator.getVariable(getNetwork()) == null) {
             return false;
         }
@@ -246,7 +262,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     @Override
     public void onLoad() {
         super.onLoad();
-        if (!MinecraftHelpers.isClientSide()) {
+        if (!MinecraftHelpers.isClientSideThread()) {
             this.shouldSendUpdateEvent = true;
             MinecraftForge.EVENT_BUS.register(this);
         }
@@ -320,10 +336,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!event.player.world.isRemote) {
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (EntityPlayerMP) event.player);
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (EntityPlayerMP) event.player);
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (EntityPlayerMP) event.player);
+        if (!event.getPlayer().world.isRemote) {
+            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
+            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
+            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (ServerPlayerEntity) event.getPlayer());
         }
     }
 
@@ -335,17 +351,27 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 //    }
 
     private void notifyTargetChange() {
-        for (EnumFacing offset : EnumFacing.VALUES) {
-            this.world.neighborChanged(this.pos.offset(offset), getBlockType(), this.pos);
+        for (Direction offset : Direction.values()) {
+            this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
         }
     }
 
     @SubscribeEvent
     public void onTargetChanged(BlockEvent.NeighborNotifyEvent event) {
-        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.target.getWorld())) {
+        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.target.getWorld(false))) {
             notifyTargetChange();
         }
     }
-    //TODO:rs_writer, light_panel
 
+    @Override
+    public ITextComponent getDisplayName() {
+        return new TranslationTextComponent("tile.blocks.integrated_proxy.access_proxy.name");
+    }
+
+    @Nullable
+    @Override
+    public Container createMenu(int id, PlayerInventory playerInventory, PlayerEntity playerEntity) {
+        return new ContainerAccessProxy(id, playerInventory, this.getInventory(), Optional.of(this));
+    }
+    //TODO:rs_writer, light_panel
 }
