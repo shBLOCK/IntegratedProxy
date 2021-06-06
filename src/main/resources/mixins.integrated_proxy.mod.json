@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "com.shblock.integrated_proxy.mixin",
+  "package": "com.shblock.integratedproxy.mixin",
   "compatibilityLevel": "JAVA_8",
   "target": "@env(DEFAULT)",
   "refmap": "mixins.integrated_proxy.refmap.json",
