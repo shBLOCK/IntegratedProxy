@@ -150,6 +150,9 @@ minecraft {
         }
 
         server {
+            arg "--mixin=mixins.integrated_proxy.json"
+            arg "--tweakClass=org.spongepowered.asm.launch.MixinTweaker"
+            jvmArg("-Dfml.coreMods.load=com.shblock.integrated_proxy.mixin.MixinLoader")
 
             // Recommended logging data for a userdev environment
             property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'

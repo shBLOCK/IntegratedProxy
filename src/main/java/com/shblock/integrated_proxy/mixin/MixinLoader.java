@@ -19,7 +19,9 @@ public class MixinLoader implements IFMLLoadingPlugin {
     public MixinLoader() {
         MixinBootstrap.init();
         MixinEnvironment.getEnvironment(MixinEnvironment.Phase.PREINIT).addConfiguration("mixins.integrated_proxy.loader.json");
-        Logger.getGlobal().log(Level.INFO, "Added mixin config: mixins.integrated_proxy.loader.json");
+        Logger.getGlobal().log(Level.INFO, "Added loader mixin");
+        MixinEnvironment.getEnvironment(MixinEnvironment.Phase.DEFAULT).addConfiguration("mixins.integrated_proxy.world.json");
+        Logger.getGlobal().log(Level.INFO, "Added world mixin");
     }
 
     @Override

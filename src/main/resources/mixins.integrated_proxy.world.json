@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.shblock.integrated_proxy.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "target": "@env(DEFAULT)",
+  "refmap": "mixins.integrated_proxy.refmap.json",
+  "mixins": [
+    "MixinWorldRedstone"
+  ],
+  "minVersion": "0.8",
+  "setSourceFile": true
+}
