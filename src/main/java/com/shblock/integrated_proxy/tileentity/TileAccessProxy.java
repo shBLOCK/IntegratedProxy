@@ -156,7 +156,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void rotateDisplayValue(EnumFacing side) {
-        int ord = side.ordinal();
+        int ord = side.getIndex();
         this.display_rotations[ord] ++;
         if (this.display_rotations[ord] >= 4) {
             this.display_rotations[ord] = 0;
@@ -177,7 +177,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         return evaluator.getVariable(getNetwork()).getValue().cast(ValueTypes.INTEGER).getRawValue();
     }
 
-    private void updateTarget() {
+    private void updateTargetPos() {
         if (!getWorld().isRemote) {
             DimPos old_target = this.target == null ? null : DimPos.of(this.target.getDimensionId(), this.target.getBlockPos());
             try {
@@ -237,7 +237,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void setSideRedstonePower(EnumFacing side, int power) {
-        this.redstone_powers[side.ordinal()] = power;
+        this.redstone_powers[side.getIndex()] = power;
         markDirty();
     }
 
@@ -301,13 +301,13 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                 IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()));
             }
 
-            updateTarget();
+            updateTargetPos();
         }
     }
 
     @Override
     public void afterNetworkReAlive() {
-        updateTarget();
+        updateTargetPos();
     }
 
     @Override
@@ -326,7 +326,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public void onEvent(INetworkEvent event, AccessProxyNetworkElement networkElement) {
         if (event instanceof VariableContentsUpdatedEvent) {
             this.refreshVariables(false);
-            updateTarget();
+            updateTargetPos();
             sendUpdate();
         }
     }
@@ -347,9 +347,16 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 //        }
 //    }
 
-    private void notifyTargetChange() {
+    public void notifyTargetChange() {
         for (EnumFacing offset : EnumFacing.VALUES) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockType(), this.pos);
+        }
+    }
+
+    public void updateTargetBlock() {
+        this.world.notifyNeighborsOfStateChange(this.target.getBlockPos(), this.world.getBlockState(this.target.getBlockPos()).getBlock(), true);
+        for (EnumFacing side : EnumFacing.VALUES) {
+            this.world.notifyNeighborsOfStateChange(this.target.getBlockPos().offset(side), this.world.getBlockState(this.target.getBlockPos()).getBlock(), true);
         }
     }
 

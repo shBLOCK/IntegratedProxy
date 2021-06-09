@@ -30,7 +30,7 @@ public abstract class MixinWorldRedstone {
             data = new AccessProxyCollection();
             storage.setData(AccessProxyCollection.NAME, data);
         }
-        HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos.offset(facing));
+        HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos.offset(facing.getOpposite()));
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
             for (BlockPos proxy : proxies) {

@@ -5,8 +5,7 @@
   "target": "@env(DEFAULT)",
   "refmap": "mixins.integrated_proxy.refmap.json",
   "mixins": [
-    "MixinPartTarget",
-    "MixinWriteRedstoneComponent"
+    "MixinPartTarget"
   ],
   "minVersion": "0.8",
   "setSourceFile": true

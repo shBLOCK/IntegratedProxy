@@ -12,6 +12,8 @@ import net.minecraft.inventory.Container;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfig;
 import org.cyclops.cyclopscore.config.extendedconfig.ExtendedConfig;
@@ -95,23 +97,26 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
     @Override
     public void neighborChanged(IBlockState state, World world, BlockPos pos, Block neighborBlock, BlockPos fromPos) {
         super.neighborChanged(state, world, pos, neighborBlock, fromPos);
-        if (!world.isRemote) {
-            for (EnumFacing side : EnumFacing.VALUES) {
-                IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, pos.offset(side)), side.getOpposite(), DynamicRedstoneConfig.CAPABILITY);
+        if (pos.getY() == fromPos.getY() && !world.isRemote) {
+            boolean update_target = false;
+            Vec3i facing_vec = fromPos.subtract(new Vec3i(pos.getX(), pos.getY(), pos.getZ()));
+            EnumFacing facing = EnumFacing.getFacingFromVector(facing_vec.getX(), facing_vec.getY(), facing_vec.getZ());
+            TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
+            if (te != null) {
+                IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, fromPos), facing.getOpposite(), DynamicRedstoneConfig.CAPABILITY);
                 if (cap != null) {
-                    TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
-                    if (te == null) {
-                        return;
-                    }
-                    te.setSideRedstonePower(side, cap.getRedstoneLevel());
+                    te.setSideRedstonePower(facing, cap.getRedstoneLevel());
                     te.markDirty();
+                    update_target = true;
                 } else {
-                    TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
-                    if (te == null) {
-                        return;
+                    if (te.redstone_powers[facing.getIndex()] != 0) {
+                        update_target = true;
                     }
-                    te.setSideRedstonePower(side, 0);
+                    te.setSideRedstonePower(facing, 0);
                     te.markDirty();
+                }
+                if (update_target) {
+                    te.updateTargetBlock();
                 }
             }
         }
