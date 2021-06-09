@@ -1,5 +1,6 @@
 package com.shblock.integrated_proxy.network.packet;
 
+import com.shblock.integrated_proxy.client.data.AccessProxyClientData;
 import com.shblock.integrated_proxy.client.render.world.AccessProxyTargetRenderer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -38,7 +39,7 @@ public class UpdateProxyDisplayRotationPacket extends PacketCodec {
 
     @Override
     public void actionClient(World world, EntityPlayer player) {
-        AccessProxyTargetRenderer.getInstance().putRotation(DimPos.of(this.proxy_dim, this.proxy_pos), this.rotation.getIntArray("rot"));
+        AccessProxyClientData.getInstance().putRotation(DimPos.of(this.proxy_dim, this.proxy_pos), this.rotation.getIntArray("rot"));
     }
 
     @Override

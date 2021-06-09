@@ -1,5 +1,6 @@
 package com.shblock.integrated_proxy.network.packet;
 
+import com.shblock.integrated_proxy.client.data.AccessProxyClientData;
 import com.shblock.integrated_proxy.client.render.world.AccessProxyTargetRenderer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -35,7 +36,7 @@ public class UpdateProxyRenderPacket extends PacketCodec {
 
     @Override
     public void actionClient(World world, EntityPlayer player) {
-        AccessProxyTargetRenderer.getInstance().put(
+        AccessProxyClientData.getInstance().putTarget(
                 DimPos.of(this.proxy_dim, this.proxy_pos),
                 DimPos.of(this.target_dim, this.target_pos)
         );

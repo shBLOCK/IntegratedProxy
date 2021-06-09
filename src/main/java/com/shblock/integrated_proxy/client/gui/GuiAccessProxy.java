@@ -1,5 +1,6 @@
 package com.shblock.integrated_proxy.client.gui;
 
+import com.shblock.integrated_proxy.client.data.AccessProxyClientData;
 import com.shblock.integrated_proxy.client.render.world.AccessProxyTargetRenderer;
 import com.shblock.integrated_proxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integrated_proxy.tileentity.TileAccessProxy;
@@ -84,7 +85,7 @@ public class GuiAccessProxy extends GuiContainerConfigurable<ContainerAccessProx
         drawCenteredString(this.fontRenderer, I18n.format("integrated_proxy.gui.access_proxy.z"), offsetX + this.guiLeft + 27 + 36 * 2 + 9, offsetY + this.guiTop + 42, 4210752);
         drawCenteredString(this.fontRenderer, I18n.format("integrated_proxy.gui.access_proxy.display_value"), offsetX + this.guiLeft + 27 + 36 * 3 + 9, offsetY + this.guiTop + 42, 4210752);
 
-        DimPos target = AccessProxyTargetRenderer.getInstance().get(getContainer().getTile().getPos(), getContainer().getTile().getWorld().provider.getDimension());
+        DimPos target = AccessProxyClientData.getInstance().getTarget(getContainer().getTile().getPos(), getContainer().getTile().getWorld().provider.getDimension());
         String pos_str = I18n.format(
                 "integrated_proxy.gui.access_proxy.display_pos",
                 target.getBlockPos().getX(),

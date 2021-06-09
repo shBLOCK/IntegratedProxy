@@ -6,6 +6,7 @@ import com.shblock.integrated_proxy.network.packet.RemoveProxyRenderPacket;
 import com.shblock.integrated_proxy.network.packet.UpdateProxyDisplayRotationPacket;
 import com.shblock.integrated_proxy.network.packet.UpdateProxyDisplayValuePacket;
 import com.shblock.integrated_proxy.network.packet.UpdateProxyRenderPacket;
+import com.shblock.integrated_proxy.storage.AccessProxyCollection;
 import com.typesafe.config.ConfigException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -62,6 +63,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public DimPos target;
     public int pos_mode = 0;
     public int[] display_rotations = new int[]{0, 0, 0, 0, 0, 0};
+    public int[] redstone_powers = new int[]{0, 0, 0, 0, 0, 0};
 
     public TileAccessProxy() {
         super(4, "variables", 1);
@@ -104,12 +106,12 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         NBTClassType.writeNbt(List.class, "errors_z", evaluator_z.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_display", evaluator_display.getErrors(), tag);
         tag.setIntArray("display_rotations", this.display_rotations);
-
         if (getDisplayValue() != null) {
 //            tag.setString("displayValueType", value.getType().getTranslationKey());
 //            tag.setString("displayValue", ValueHelpers.serializeRaw(value));
             tag.setTag("displayValue", ValueHelpers.serialize(getDisplayValue()));
         }
+        tag.setIntArray("rs_power", this.redstone_powers);
 
         return tag;
     }
@@ -140,6 +142,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         } else {
             setDisplayValue(null);
         }
+        this.redstone_powers = tag.getIntArray("rs_power");
 
         this.shouldSendUpdateEvent = true;
     }
@@ -201,12 +204,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                 this.target = DimPos.of(this.world, this.pos);
             }
 
-            if (!this.world.isRemote) {
-                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
-            }
-
             if (!this.target.equals(old_target)) {
                 notifyTargetChange();
+                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
+                AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
             }
         }
     }
@@ -233,6 +234,19 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         return evaluator.hasVariable() &&
                 evaluator.getVariable(getNetwork()).getType() instanceof ValueTypeInteger &&
                 evaluator.getErrors().isEmpty();
+    }
+
+    public void setSideRedstonePower(EnumFacing side, int power) {
+        this.redstone_powers[side.ordinal()] = power;
+        markDirty();
+    }
+
+    public int getRedstonePowerForTarget() {
+        int power = 0;
+        for (int i : this.redstone_powers) {
+            power = Math.max(power, i);
+        }
+        return power;
     }
 
     @Override

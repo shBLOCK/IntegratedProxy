@@ -1,6 +1,7 @@
 package com.shblock.integrated_proxy.proxy;
 
 import com.shblock.integrated_proxy.IntegratedProxy;
+import com.shblock.integrated_proxy.client.data.AccessProxyClientData;
 import com.shblock.integrated_proxy.client.render.world.AccessProxyTargetRenderer;
 import net.minecraftforge.common.MinecraftForge;
 import org.cyclops.cyclopscore.init.ModBase;
@@ -20,6 +21,7 @@ public class ClientProxy extends ClientProxyComponent {
     @Override
     public void registerEventHooks() {
         super.registerEventHooks();
-        MinecraftForge.EVENT_BUS.register(AccessProxyTargetRenderer.getInstance());
+        MinecraftForge.EVENT_BUS.register(AccessProxyTargetRenderer.class);
+        MinecraftForge.EVENT_BUS.register(AccessProxyClientData.getInstance());
     }
 }

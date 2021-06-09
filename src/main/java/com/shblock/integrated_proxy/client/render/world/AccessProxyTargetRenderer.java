@@ -1,5 +1,6 @@
 package com.shblock.integrated_proxy.client.render.world;
 
+import com.shblock.integrated_proxy.client.data.AccessProxyClientData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
@@ -25,47 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AccessProxyTargetRenderer {
-    private static final AccessProxyTargetRenderer _instance = new AccessProxyTargetRenderer();
-
-    private final HashMap<DimPos, DimPos> map = new HashMap<>();
-    private final HashMap<DimPos, IValue> variable_map = new HashMap<>();
-    private final HashMap<DimPos, int[]> rotation_map = new HashMap<>();
-
-    public static AccessProxyTargetRenderer getInstance() {
-        return _instance;
-    }
-
-    public void put(DimPos proxy, DimPos target) {
-        this.map.put(proxy, target);
-    }
-
-    public void putVariable(DimPos proxy, IValue value) {
-        this.variable_map.put(proxy, value);
-    }
-
-    public void putRotation(DimPos proxy, int[] value) {
-        this.rotation_map.put(proxy, value);
-    }
-
-    public void remove(DimPos proxy) {
-        this.map.remove(proxy);
-        this.variable_map.remove(proxy);
-        this.rotation_map.remove(proxy);
-    }
-
-    public DimPos get(BlockPos pos, int dim) {
-        return this.map.get(DimPos.of(dim, pos));
-    }
-
     @SubscribeEvent
-    public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.player.equals(Minecraft.getMinecraft().player) && event.player.world.isRemote) {
-            this.map.clear();
-        }
-    }
-
-    @SubscribeEvent
-    public void onRender(RenderWorldLastEvent event) {
+    public static void onRender(RenderWorldLastEvent event) {
         GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         GlStateManager.disableTexture2D();
 
@@ -75,7 +37,7 @@ public class AccessProxyTargetRenderer {
         double offsetY = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double) partialTicks;
         double offsetZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double) partialTicks;
 
-        for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
+        for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
             DimPos target = entry.getValue();
 
             Vec3d target_vec = new Vec3d(
@@ -99,11 +61,11 @@ public class AccessProxyTargetRenderer {
         GlStateManager.enableTexture2D();
 
         GlStateManager.enableRescaleNormal();
-        for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
+        for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
             DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
-            IValue value = this.variable_map.get(proxy);
-            int[] rotation = this.rotation_map.get(proxy);
+            IValue value = AccessProxyClientData.getInstance().getVariable(proxy);
+            int[] rotation = AccessProxyClientData.getInstance().getRotation(proxy);
             if (rotation == null) {
                 rotation = new int[]{0, 0, 0, 0, 0, 0};
             }
@@ -118,14 +80,9 @@ public class AccessProxyTargetRenderer {
                     GlStateManager.translate(-offsetX + target.getBlockPos().getX(), -offsetY + target.getBlockPos().getY(), -offsetZ + target.getBlockPos().getZ());
                     translateToFacing(facing);
                     GlStateManager.scale(scale, scale, scale);
-//                    GlStateManager.translate(-6.25, 0, -6.25);
-//                    GlStateManager.rotate(rotation[facing.ordinal()] * 90, 0, 1, 0);
-//                    GlStateManager.translate(6.25, 0, 6.25);
                     rotateSide(facing, rotation);
                     GlStateManager.rotate(180, 0, 0, 1);
-//                    GlStateManager.rotate(180, 0, 0, 1);
                     rotateToFacing(facing);
-//                    rotateSide(facing, rotation);
 
                     IValueTypeWorldRenderer renderer = ValueTypeWorldRenderers.REGISTRY.getRenderer(value.getType());
                     if (renderer == null) {
@@ -154,7 +111,7 @@ public class AccessProxyTargetRenderer {
         }
     }
 
-    private void translateToFacing(EnumFacing facing) {
+    private static void translateToFacing(EnumFacing facing) {
         switch (facing) {
             case DOWN:
                 GlStateManager.translate(1, -0.01, 0);
@@ -177,7 +134,7 @@ public class AccessProxyTargetRenderer {
         }
     }
 
-    private void rotateToFacing(EnumFacing facing) {
+    private static void rotateToFacing(EnumFacing facing) {
         short rotationY = 0;
         short rotationX = 0;
         if (facing == EnumFacing.SOUTH) {
@@ -197,7 +154,7 @@ public class AccessProxyTargetRenderer {
         GlStateManager.rotate(rotationX, 1.0F, 0.0F, 0.0F);
     }
 
-    private void rotateSide(EnumFacing side, int[] rotation) {
+    private static void rotateSide(EnumFacing side, int[] rotation) {
         switch (side) {
             case UP:
                 GlStateManager.translate(-6.25, 0, -6.25);
