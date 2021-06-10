@@ -114,7 +114,7 @@ dependencies {
     }
 }
 
-version = '1.0'
+version = '1.0.1'
 group = 'com.shblock.integrated_proxy' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'integrated_proxy'
 
