@@ -145,8 +145,12 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         } else {
             setDisplayValue(null);
         }
-        this.redstone_powers = tag.getIntArray("rs_power");
-        this.strong_powers = tag.getIntArray("strong_power");
+        if (tag.hasKey("rs_power")) {
+            this.redstone_powers = tag.getIntArray("rs_power");
+        }
+        if (tag.hasKey("strong_power")) {
+            this.strong_powers = tag.getIntArray("strong_power");
+        }
 
         this.shouldSendUpdateEvent = true;
     }
