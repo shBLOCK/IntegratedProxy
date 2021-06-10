@@ -23,6 +23,7 @@ import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
 import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
+import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
 import org.cyclops.integrateddynamics.api.block.IVariableContainer;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -64,6 +65,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public int pos_mode = 0;
     public int[] display_rotations = new int[]{0, 0, 0, 0, 0, 0};
     public int[] redstone_powers = new int[]{0, 0, 0, 0, 0, 0};
+    private int[] strong_powers = new int[]{0, 0, 0, 0, 0, 0};
 
     public TileAccessProxy() {
         super(4, "variables", 1);
@@ -112,6 +114,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             tag.setTag("displayValue", ValueHelpers.serialize(getDisplayValue()));
         }
         tag.setIntArray("rs_power", this.redstone_powers);
+        tag.setIntArray("strong_power", this.strong_powers);
 
         return tag;
     }
@@ -143,6 +146,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             setDisplayValue(null);
         }
         this.redstone_powers = tag.getIntArray("rs_power");
+        this.strong_powers = tag.getIntArray("strong_power");
 
         this.shouldSendUpdateEvent = true;
     }
@@ -236,14 +240,35 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                 evaluator.getErrors().isEmpty();
     }
 
-    public void setSideRedstonePower(EnumFacing side, int power) {
-        this.redstone_powers[side.getIndex()] = power;
+    public boolean setSideRedstonePower(EnumFacing side, IDynamicRedstone cap) {
+        int[] old_strong = this.strong_powers.clone();
+        int[] old_power = this.redstone_powers.clone();
+        if (cap != null) {
+            this.redstone_powers[side.getIndex()] = cap.getRedstoneLevel();
+            if (cap.isStrong()) {
+                this.strong_powers[side.getIndex()] = cap.getRedstoneLevel();
+            } else {
+                this.strong_powers[side.getIndex()] = 0;
+            }
+        } else {
+            this.redstone_powers[side.getIndex()] = 0;
+            this.strong_powers[side.getIndex()] = 0;
+        }
         markDirty();
+        return this.redstone_powers != old_power || this.strong_powers != old_strong;
     }
 
     public int getRedstonePowerForTarget() {
         int power = 0;
         for (int i : this.redstone_powers) {
+            power = Math.max(power, i);
+        }
+        return power;
+    }
+
+    public int getStrongPowerForTarget() {
+        int power = 0;
+        for (int i : this.strong_powers) {
             power = Math.max(power, i);
         }
         return power;

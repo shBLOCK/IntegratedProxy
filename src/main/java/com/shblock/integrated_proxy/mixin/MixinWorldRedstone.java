@@ -42,4 +42,25 @@ public abstract class MixinWorldRedstone {
             callback.setReturnValue(max_power);
         }
     }
+
+    @Inject(at = @At("RETURN"), method = "Lnet/minecraft/world/World;getStrongPower(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/EnumFacing;)I", cancellable = true)
+    public void getStrongPower(BlockPos pos, EnumFacing facing, CallbackInfoReturnable<Integer> callback) {
+        MapStorage storage = getPerWorldStorage();
+        AccessProxyCollection data = (AccessProxyCollection) storage.getOrLoadData(AccessProxyCollection.class, AccessProxyCollection.NAME);
+        if (data == null) {
+            data = new AccessProxyCollection();
+            storage.setData(AccessProxyCollection.NAME, data);
+        }
+        HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos.offset(facing.getOpposite()));
+        if (!proxies.isEmpty()) {
+            int max_power = callback.getReturnValue();
+            for (BlockPos proxy : proxies) {
+                TileAccessProxy tile = (TileAccessProxy) this.getTileEntity(proxy);
+                if (tile != null) {
+                    max_power = Math.max(max_power, tile.getStrongPowerForTarget());
+                }
+            }
+            callback.setReturnValue(max_power);
+        }
+    }
 }
