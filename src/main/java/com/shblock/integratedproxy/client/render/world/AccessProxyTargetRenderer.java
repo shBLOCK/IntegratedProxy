@@ -4,81 +4,28 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.shblock.integratedproxy.client.data.AccessProxyClientData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.util.Direction;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.integrateddynamics.api.client.render.valuetype.IValueTypeWorldRenderer;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.client.render.valuetype.ValueTypeWorldRenderers;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class AccessProxyTargetRenderer {
-    private static final AccessProxyTargetRenderer _instance = new AccessProxyTargetRenderer();
-
-    private final HashMap<DimPos, DimPos> map = new HashMap<>();
-    private final HashMap<DimPos, IValue> variable_map = new HashMap<>();
-    private final HashMap<DimPos, int[]> rotation_map = new HashMap<>();
-
-    public static AccessProxyTargetRenderer getInstance() {
-        return _instance;
-    }
-
-    public void put(DimPos proxy, DimPos target) {
-        this.map.put(proxy, target);
-    }
-
-    public void putVariable(DimPos proxy, IValue value) {
-        this.variable_map.put(proxy, value);
-    }
-
-    public void putRotation(DimPos proxy, int[] value) {
-        this.rotation_map.put(proxy, value);
-    }
-
-    public void remove(DimPos proxy) {
-        this.map.remove(proxy);
-        this.variable_map.remove(proxy);
-        this.rotation_map.remove(proxy);
-    }
-
-    public DimPos get(DimPos dimPos) {
-        return this.map.get(dimPos);
-    }
-
-    public DimPos get(BlockPos pos, World dim) {
-        return this.map.get(DimPos.of(dim, pos));
-    }
-
-    public DimPos get(BlockPos pos, String key) {
-        return this.map.get(DimPos.of(RegistryKey.getOrCreateKey(Registry.WORLD_KEY, new ResourceLocation(key)), pos));
-    }
-
     @SubscribeEvent
-    public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        System.out.println("onLogout");
-        if (event.getPlayer().equals(Minecraft.getInstance().player) && event.getPlayer().world.isRemote) {
-            this.map.clear();
-        }
-    }
-
-    @SubscribeEvent
-    public void onRender(RenderWorldLastEvent event) {
+    public static void onRender(RenderWorldLastEvent event) {
         RenderSystem.disableTexture();
         RenderSystem.blendFuncSeparate(
                 GlStateManager.SourceFactor.SRC_ALPHA.param,
@@ -96,10 +43,11 @@ public class AccessProxyTargetRenderer {
         matrixStack.push();
         matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
 
-        for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
+        for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
+            DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
 
-            if (target.getWorld().equals(Minecraft.getInstance().world.getDimensionKey().getLocation().toString())) {
+            if (target.getWorldKey().equals(Minecraft.getInstance().world.getDimensionKey()) && !AccessProxyClientData.getInstance().getDisable(proxy)) {
                 AxisAlignedBB bb = new AxisAlignedBB(
                         new BlockPos(
                             target.getBlockPos().getX(),
@@ -115,11 +63,11 @@ public class AccessProxyTargetRenderer {
         buffer.finish(RenderType.LINES);
 
         matrixStack.push();
-        for (Map.Entry<DimPos, DimPos> entry : this.map.entrySet()) {
+        for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
             DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
-            IValue value = this.variable_map.get(proxy);
-            int[] rotation = this.rotation_map.get(proxy);
+            IValue value = AccessProxyClientData.getInstance().getVariable(proxy);
+            int[] rotation = AccessProxyClientData.getInstance().getRotation(proxy);
             if (rotation == null) {
                 rotation = new int[]{0, 0, 0, 0, 0, 0};
             }
@@ -161,7 +109,7 @@ public class AccessProxyTargetRenderer {
         buffer.finish();
     }
 
-    private void translateToFacing(MatrixStack matrixStack, Direction facing) {
+    private static void translateToFacing(MatrixStack matrixStack, Direction facing) {
         switch (facing) {
             case DOWN:
                 matrixStack.translate(1, -0.015F, 0);
@@ -184,7 +132,7 @@ public class AccessProxyTargetRenderer {
         }
     }
 
-    private void rotateToFacing(MatrixStack matrixStack, Direction facing) {
+    private static void rotateToFacing(MatrixStack matrixStack, Direction facing) {
         short rotationY = 0;
         short rotationX = 0;
         if (facing == Direction.SOUTH) {
@@ -204,7 +152,7 @@ public class AccessProxyTargetRenderer {
         matrixStack.rotate(Vector3f.XP.rotationDegrees(rotationX));
     }
 
-    private void rotateSide(MatrixStack matrixStack, Direction side, int[] rotation) {
+    private static void rotateSide(MatrixStack matrixStack, Direction side, int[] rotation) {
         switch (side) {
             case UP:
                 matrixStack.translate(-6.25F, 0, -6.25F);

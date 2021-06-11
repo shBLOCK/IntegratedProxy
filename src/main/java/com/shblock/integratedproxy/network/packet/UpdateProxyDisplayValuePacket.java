@@ -1,6 +1,6 @@
 package com.shblock.integratedproxy.network.packet;
 
-import com.shblock.integratedproxy.client.render.world.AccessProxyTargetRenderer;
+import com.shblock.integratedproxy.client.data.AccessProxyClientData;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -41,10 +41,10 @@ public class UpdateProxyDisplayValuePacket extends PacketCodec {
     @Override
     public void actionClient(World world, PlayerEntity player) {
         if (nbt.isEmpty()) {
-            AccessProxyTargetRenderer.getInstance().putVariable(DimPos.of(this.proxy_dim, this.proxy_pos), null);
+            AccessProxyClientData.getInstance().putVariable(DimPos.of(this.proxy_dim, this.proxy_pos), null);
             return;
         }
-        AccessProxyTargetRenderer.getInstance().putVariable(DimPos.of(this.proxy_dim, this.proxy_pos), ValueHelpers.deserialize(nbt));
+        AccessProxyClientData.getInstance().putVariable(DimPos.of(this.proxy_dim, this.proxy_pos), ValueHelpers.deserialize(nbt));
     }
 
     @Override

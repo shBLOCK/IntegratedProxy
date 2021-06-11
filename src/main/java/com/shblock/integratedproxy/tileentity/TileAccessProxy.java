@@ -4,10 +4,7 @@ import com.shblock.integratedproxy.IPRegistryEntries;
 import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.id_network.AccessProxyNetworkElement;
 import com.shblock.integratedproxy.inventory.container.ContainerAccessProxy;
-import com.shblock.integratedproxy.network.packet.RemoveProxyRenderPacket;
-import com.shblock.integratedproxy.network.packet.UpdateProxyDisplayRotationPacket;
-import com.shblock.integratedproxy.network.packet.UpdateProxyDisplayValuePacket;
-import com.shblock.integratedproxy.network.packet.UpdateProxyRenderPacket;
+import com.shblock.integratedproxy.network.packet.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -73,6 +70,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public DimPos target;
     public int pos_mode = 0;
     public int[] display_rotations = new int[]{0, 0, 0, 0, 0, 0};
+    public boolean disable_render = false;
 
     public TileAccessProxy() {
         super(IPRegistryEntries.TILE_ACCESS_PROXY,4, 1);
@@ -133,6 +131,8 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             tag.put("displayValue", ValueHelpers.serialize(getDisplayValue()));
         }
 
+        tag.putBoolean("disable_render", this.disable_render);
+
         return tag;
     }
 
@@ -149,6 +149,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             setDisplayValue(ValueHelpers.deserialize(tag.getCompound("displayValue")));
         } else {
             setDisplayValue(null);
+        }
+
+        if (tag.contains("disable_render")) {
+            this.disable_render = tag.getBoolean("disable_render");
         }
 
         this.shouldSendUpdateEvent = true;
@@ -170,6 +174,12 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         }
         markDirty();
         IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations));
+    }
+
+    public void changeDisableRender() {
+        this.disable_render = !this.disable_render;
+        markDirty();
+        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render));
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
@@ -354,6 +364,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (ServerPlayerEntity) event.getPlayer());
+            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render), (ServerPlayerEntity) event.getPlayer());
         }
     }
 

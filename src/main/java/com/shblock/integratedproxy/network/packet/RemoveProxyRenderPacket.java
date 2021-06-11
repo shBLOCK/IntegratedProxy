@@ -1,6 +1,6 @@
 package com.shblock.integratedproxy.network.packet;
 
-import com.shblock.integratedproxy.client.render.world.AccessProxyTargetRenderer;
+import com.shblock.integratedproxy.client.data.AccessProxyClientData;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.RegistryKey;
@@ -30,7 +30,7 @@ public class RemoveProxyRenderPacket extends PacketCodec {
 
     @Override
     public void actionClient(World world, PlayerEntity player) {
-        AccessProxyTargetRenderer.getInstance().remove(
+        AccessProxyClientData.getInstance().remove(
                 DimPos.of(this.proxy_dim, this.proxy_pos)
         );
     }

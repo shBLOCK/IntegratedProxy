@@ -1,10 +1,7 @@
 package com.shblock.integratedproxy.proxy;
 
 import com.shblock.integratedproxy.IntegratedProxy;
-import com.shblock.integratedproxy.network.packet.RemoveProxyRenderPacket;
-import com.shblock.integratedproxy.network.packet.UpdateProxyDisplayRotationPacket;
-import com.shblock.integratedproxy.network.packet.UpdateProxyDisplayValuePacket;
-import com.shblock.integratedproxy.network.packet.UpdateProxyRenderPacket;
+import com.shblock.integratedproxy.network.packet.*;
 import org.cyclops.cyclopscore.init.ModBase;
 import org.cyclops.cyclopscore.network.PacketHandler;
 import org.cyclops.cyclopscore.proxy.CommonProxyComponent;
@@ -23,6 +20,7 @@ public class CommonProxy extends CommonProxyComponent {
         packetHandler.register(UpdateProxyRenderPacket.class);
         packetHandler.register(UpdateProxyDisplayValuePacket.class);
         packetHandler.register(UpdateProxyDisplayRotationPacket.class);
+        packetHandler.register(UpdateDisableRenderPacket.class);
     }
 
     @Override

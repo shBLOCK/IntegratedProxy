@@ -48,7 +48,6 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
             if (world.getTileEntity(pos) == null) {
                 return;
             }
-            System.out.println("remove render");
             ((TileAccessProxy) world.getTileEntity(pos)).sendRemoveRenderPacket();
             ((TileAccessProxy) world.getTileEntity(pos)).unRegisterEventHandle();
         }
@@ -76,6 +75,10 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
     public ActionResultType onBlockActivated(BlockState blockState, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult rayTraceResult) {
         if (!world.isRemote) {
             if (player.isSneaking()) {
+                if (player.getHeldItem(hand).isEmpty()) {
+                    ((TileAccessProxy) world.getTileEntity(pos)).changeDisableRender();
+                    return ActionResultType.SUCCESS;
+                }
                 return super.onBlockActivated(blockState, world, pos, player, hand, rayTraceResult);
             } else {
                 if (WrenchHelpers.isWrench(player, player.getHeldItem(hand), world, pos, rayTraceResult.getFace())) {
@@ -88,9 +91,14 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
         } else {
             if (WrenchHelpers.isWrench(player, player.getHeldItem(hand), world, pos, rayTraceResult.getFace())) {
                 return ActionResultType.SUCCESS;
+            } else if (player.isSneaking()) {
+                if (player.getHeldItem(hand).isEmpty()) {
+                    return ActionResultType.SUCCESS;
+                }
             } else {
                 return super.onBlockActivated(blockState, world, pos, player, hand, rayTraceResult);
             }
         }
+        return ActionResultType.FAIL;
     }
 }

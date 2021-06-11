@@ -10,23 +10,20 @@ import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.network.CodecField;
 import org.cyclops.cyclopscore.network.PacketCodec;
 
-public class UpdateProxyRenderPacket extends PacketCodec {
+public class UpdateDisableRenderPacket extends PacketCodec {
     @CodecField
     private BlockPos proxy_pos;
     @CodecField
     private RegistryKey<World> proxy_dim;
     @CodecField
-    private BlockPos target_pos;
-    @CodecField
-    private RegistryKey<World> target_dim;
+    private boolean disable;
 
-    public UpdateProxyRenderPacket() { }
+    public UpdateDisableRenderPacket() { }
 
-    public UpdateProxyRenderPacket(DimPos proxy_pos, DimPos target_pos) {
+    public UpdateDisableRenderPacket(DimPos proxy_pos, boolean disable) {
         this.proxy_pos = proxy_pos.getBlockPos();
         this.proxy_dim = proxy_pos.getWorldKey();
-        this.target_pos = target_pos.getBlockPos();
-        this.target_dim = target_pos.getWorldKey();
+        this.disable = disable;
     }
 
     @Override
@@ -36,10 +33,7 @@ public class UpdateProxyRenderPacket extends PacketCodec {
 
     @Override
     public void actionClient(World world, PlayerEntity player) {
-        AccessProxyClientData.getInstance().putTarget(
-                DimPos.of(this.proxy_dim, this.proxy_pos),
-                DimPos.of(this.target_dim, this.target_pos)
-        );
+        AccessProxyClientData.getInstance().putDisable(DimPos.of(this.proxy_dim, this.proxy_pos), this.disable);
     }
 
     @Override

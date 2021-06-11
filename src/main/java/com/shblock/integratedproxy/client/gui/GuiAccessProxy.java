@@ -2,6 +2,7 @@ package com.shblock.integratedproxy.client.gui;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.shblock.integratedproxy.client.data.AccessProxyClientData;
 import com.shblock.integratedproxy.client.render.world.AccessProxyTargetRenderer;
 import com.shblock.integratedproxy.inventory.container.ContainerAccessProxy;
 import net.minecraft.client.gui.FontRenderer;
@@ -82,7 +83,7 @@ public class GuiAccessProxy extends ContainerScreenExtended<ContainerAccessProxy
 
         if (getContainer().getTilePos() != null) {
             DimPos tilePos = getContainer().getTilePos();
-            DimPos target = AccessProxyTargetRenderer.getInstance().get(tilePos);
+            DimPos target = AccessProxyClientData.getInstance().getTarget(tilePos);
             if (target != null) {
                 String pos_str = I18n.format(
                         "integrated_proxy.gui.access_proxy.display_pos",
