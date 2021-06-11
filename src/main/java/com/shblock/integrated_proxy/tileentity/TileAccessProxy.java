@@ -336,6 +336,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @Override
     public void afterNetworkReAlive() {
+        refreshVariables(true);
         updateTargetPos();
     }
 
@@ -354,7 +355,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     @Override
     public void onEvent(INetworkEvent event, AccessProxyNetworkElement networkElement) {
         if (event instanceof VariableContentsUpdatedEvent) {
-            this.refreshVariables(false);
+            refreshVariables(false);
             updateTargetPos();
             sendUpdate();
         }

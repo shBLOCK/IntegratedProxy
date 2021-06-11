@@ -97,6 +97,9 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
     @Override
     public void neighborChanged(IBlockState state, World world, BlockPos pos, Block neighborBlock, BlockPos fromPos) {
         super.neighborChanged(state, world, pos, neighborBlock, fromPos);
+        if (neighborBlock instanceof BlockAccessProxy) {
+            return;
+        }
         if (pos.getY() == fromPos.getY() && !world.isRemote) {
             Vec3i facing_vec = fromPos.subtract(new Vec3i(pos.getX(), pos.getY(), pos.getZ()));
             EnumFacing facing = EnumFacing.getFacingFromVector(facing_vec.getX(), facing_vec.getY(), facing_vec.getZ());
