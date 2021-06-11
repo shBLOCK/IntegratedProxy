@@ -83,13 +83,17 @@ public class GuiAccessProxy extends ContainerScreenExtended<ContainerAccessProxy
         if (getContainer().getTilePos() != null) {
             DimPos tilePos = getContainer().getTilePos();
             DimPos target = AccessProxyTargetRenderer.getInstance().get(tilePos);
-            String pos_str = I18n.format(
-                    "integrated_proxy.gui.access_proxy.display_pos",
-                    target.getBlockPos().getX(),
-                    target.getBlockPos().getY(),
-                    target.getBlockPos().getZ()
-            );
-            RenderHelpers.drawScaledCenteredString(matrixStack, this.font, pos_str, this.getGuiLeftTotal() + 94, this.getGuiTopTotal() + 11, 76, ValueTypes.INTEGER.getDisplayColor());
+            if (target != null) {
+                String pos_str = I18n.format(
+                        "integrated_proxy.gui.access_proxy.display_pos",
+                        target.getBlockPos().getX(),
+                        target.getBlockPos().getY(),
+                        target.getBlockPos().getZ()
+                );
+                RenderHelpers.drawScaledCenteredString(matrixStack, this.font, pos_str, this.getGuiLeftTotal() + 94, this.getGuiTopTotal() + 11, 76, ValueTypes.INTEGER.getDisplayColor());
+            } else {
+                closeScreen();
+            }
         }
     }
 

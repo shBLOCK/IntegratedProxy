@@ -19,9 +19,9 @@ apply plugin: "java"
 apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: 'org.spongepowered.mixin'
 
-version = '1.0'
-group = 'com.shblock.integratedproxy' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = 'integratedproxy'
+version = "${version}"
+group = 'com.shblock.integrated_proxy' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = 'integrated_proxy'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
 
@@ -139,11 +139,6 @@ repositories {
     }
 }
 
-configurations {
-    shadow.setTransitive(true);
-    integrationtestCompile.extendsFrom(compile)
-}
-
 dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
@@ -170,27 +165,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-//    embed ("org.spongepowered:mixin:0.8") {
-//        exclude module: "asm-commons"
-//        exclude module: "asm-tree"
-//        exclude module: "launchwrapper"
-//        exclude module: "guava"
-//        exclude module: "log4j-core"
-//        exclude module: "gson"
-//        exclude module: "commons-io"
-//    }
-
     compile ("org.spongepowered:mixin:0.8") {
-        exclude module: "asm-commons"
-        exclude module: "asm-tree"
-        exclude module: "launchwrapper"
-        exclude module: "guava"
-        exclude module: "log4j-core"
-        exclude module: "gson"
-        exclude module: "commons-io"
-    }
-
-    shadow ("org.spongepowered:mixin:0.8") {
         exclude module: "asm-commons"
         exclude module: "asm-tree"
         exclude module: "launchwrapper"
@@ -226,7 +201,6 @@ dependencies {
 }
 
 mixin {
-    //defaultObfuscationEnv searge
     add sourceSets.main, "mixins.integrated_proxy.refmap.json"
 }
 
@@ -234,19 +208,16 @@ mixin {
 jar {
     manifest {
         attributes([
-                "MixinConfigs": "mixins.integrated_proxy.refmap.json"
+                "MixinConfigs": "mixins.integrated_proxy.mod.json",
+                "Specification-Title": "integrated_proxy",
+                "Specification-Vendor": "shBLOCK",
+                "Specification-Version": "${version}",
+                "Implementation-Title": "IntegratedProxy",
+                "Implementation-Version": "${version}",
+                "Implementation-Vendor" :"shBLOCK",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
-}
-
-shadowJar {
-    configurations = [project.configurations.shadow]
-    classifier '' // Replace the default JAR
-    append 'META-INF/mods.toml'
-}
-
-reobf {
-    shadowJar {} // Reobfuscate the shadowed JAR
 }
 
 // Example configuration to allow publishing using the maven-publish task
@@ -255,15 +226,15 @@ jar.finalizedBy('reobfJar')
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
 //publish.dependsOn('reobfJar')
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file:///${project.projectDir}/mcmodsrepo"
-        }
-    }
-}
+//publishing {
+//    publications {
+//        mavenJava(MavenPublication) {
+//            artifact jar
+//        }
+//    }
+//    repositories {
+//        maven {
+//            url "file:///${project.projectDir}/mcmodsrepo"
+//        }
+//    }
+//}

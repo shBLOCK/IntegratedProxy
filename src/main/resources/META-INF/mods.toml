@@ -7,7 +7,7 @@ logoFile="icon.png"
 authors="shBLOCK"
 
 [[mods]]
-modId="integratedproxy"
+modId="integrated_proxy"
 version="${file.jarVersion}"
 displayName="IntegratedProxy"
 description='''

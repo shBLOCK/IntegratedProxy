@@ -3,6 +3,7 @@ package com.shblock.integratedproxy.block;
 import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.item.ItemBlockAccessProxy;
 import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfig;
@@ -18,6 +19,8 @@ public class BlockAccessProxyConfig extends BlockConfig {
             "access_proxy",
             eConfig -> new BlockAccessProxy(
                     AbstractBlock.Properties.create(Material.ROCK)
+                            .hardnessAndResistance(5.0F)
+                            .sound(SoundType.METAL)
             ),
             (eConfig, block) -> new ItemBlockAccessProxy(block, new Item.Properties()
                     .group(IntegratedProxy._instance.getDefaultItemGroup())

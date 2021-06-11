@@ -19,36 +19,13 @@ import org.cyclops.cyclopscore.proxy.ICommonProxy;
 @Mod(IntegratedProxy.MODID)
 public class IntegratedProxy extends ModBaseVersionable<IntegratedProxy> {
 
-    public static final String MODID = "integratedproxy";
-//    public static final String NAME = "Integrated Proxy";
+    public static final String MODID = "integrated_proxy";
 
     public static IntegratedProxy _instance;
 
     public IntegratedProxy() {
         super(MODID, (instance) -> _instance = instance);
     }
-
-//    @Override
-//    public void postInit(FMLPostInitializationEvent event) {
-//        super.postInit(event);
-//    }
-//
-//    @Mod.EventHandler
-//    @Override
-//    public final void preInit(FMLPreInitializationEvent event) {
-//        super.preInit(event);
-//    }
-//
-//    @Mod.EventHandler
-//    @Override
-//    public final void init(FMLInitializationEvent event) {
-//        super.init(event);
-//    }
-//
-//    @Override
-//    protected RecipeHandler constructRecipeHandler() {
-//        return null;
-//    }
 
     @Override
     public ItemGroup constructDefaultItemGroup() {

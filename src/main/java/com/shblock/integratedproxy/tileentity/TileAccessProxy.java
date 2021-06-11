@@ -25,6 +25,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
@@ -43,6 +44,8 @@ import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
+import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
+import org.cyclops.integrateddynamics.core.network.event.NetworkElementRemoveEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
 
@@ -267,6 +270,13 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         }
     }
 
+    @Override
+    public void onChunkUnloaded() {
+        unRegisterEventHandle();
+    }
+
+
+
     public void sendRemoveRenderPacket() {
         if (!this.world.isRemote) {
             IntegratedProxy._instance.getPacketHandler().sendToAll(new RemoveProxyRenderPacket(DimPos.of(this.world, this.pos)));
@@ -309,6 +319,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @Override
     public void afterNetworkReAlive() {
+        refreshVariables(true);
         updateTarget();
     }
 
@@ -321,20 +332,29 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public Set<Class<? extends INetworkEvent>> getSubscribedEvents() {
         Set<Class<? extends INetworkEvent>> set = new HashSet<>();
         set.add(VariableContentsUpdatedEvent.class);
+        set.add(NetworkElementAddEvent.class);
+        set.add(NetworkElementRemoveEvent.class);
         return set;
     }
 
     @Override
     public void onEvent(INetworkEvent event, AccessProxyNetworkElement networkElement) {
-        if (event instanceof VariableContentsUpdatedEvent) {
-            this.refreshVariables(false);
-            updateTarget();
-            sendUpdate();
-        }
+//        if (event instanceof VariableContentsUpdatedEvent) {
+//            refreshVariables(false);
+//            updateTarget();
+//            sendUpdate();
+//        }
+        refreshVariables(false);
+        updateTarget();
+        sendUpdate();
     }
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (this.isRemoved()) {
+            unRegisterEventHandle();
+            return;
+        }
         if (!event.getPlayer().world.isRemote) {
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
@@ -350,6 +370,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 //    }
 
     private void notifyTargetChange() {
+        if (this.isRemoved()) {
+            unRegisterEventHandle();
+            return;
+        }
         for (Direction offset : Direction.values()) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
         }
@@ -360,6 +384,11 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.target.getWorld(false))) {
             notifyTargetChange();
         }
+    }
+
+    @SubscribeEvent
+    public void onServerStop(FMLServerStoppingEvent event) {
+        unRegisterEventHandle();
     }
 
     @Override

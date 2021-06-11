@@ -4,6 +4,7 @@ import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
 import org.apache.logging.log4j.Level;
 import org.cyclops.cyclopscore.datastructure.DimPos;
+import org.cyclops.integrateddynamics.IntegratedDynamics;
 import org.cyclops.integrateddynamics.api.network.IEventListenableNetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetwork;
 import org.cyclops.integrateddynamics.api.network.IPartNetwork;
@@ -28,7 +29,7 @@ public class AccessProxyNetworkElement extends TileNetworkElement<TileAccessProx
                 return false;
             }
             if (!partNetwork.addVariableContainer(getPos())) {
-                IntegratedProxy.clog(Level.WARN, "The access proxy is already exist: " + getPos());
+                IntegratedProxy.clog(Level.WARN, "The access proxy already exist: " + getPos());
                 return false;
             }
             return true;
@@ -57,9 +58,7 @@ public class AccessProxyNetworkElement extends TileNetworkElement<TileAccessProx
     }
 
     @Override
-    public void setPriorityAndChannel(INetwork network, int priority, int channel) {
-
-    }
+    public void setPriorityAndChannel(INetwork network, int priority, int channel) { }
 
     @Override
     public int getPriority() {

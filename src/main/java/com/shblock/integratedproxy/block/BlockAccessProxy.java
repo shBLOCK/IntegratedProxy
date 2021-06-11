@@ -7,7 +7,9 @@ import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.Explosion;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import org.cyclops.integrateddynamics.core.block.BlockTileGuiCabled;
@@ -34,6 +36,12 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
 //    public Class<? extends GuiScreen> getGui() {
 //        return GuiAccessProxy.class;
 //    }
+
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, IBlockReader reader, BlockPos pos) {
+        return super.getCollisionShape(state, reader, pos);
+    }
 
     private void onDestroy(IWorld world, BlockPos pos) {
         if (!world.isRemote()) {
