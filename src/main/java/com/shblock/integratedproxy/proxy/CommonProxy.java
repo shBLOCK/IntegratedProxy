@@ -20,7 +20,7 @@ public class CommonProxy extends CommonProxyComponent {
         packetHandler.register(UpdateProxyRenderPacket.class);
         packetHandler.register(UpdateProxyDisplayValuePacket.class);
         packetHandler.register(UpdateProxyDisplayRotationPacket.class);
-        packetHandler.register(UpdateDisableRenderPacket.class);
+        packetHandler.register(UpdateProxyDisableRenderPacket.class);
     }
 
     @Override

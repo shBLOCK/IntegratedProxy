@@ -10,7 +10,7 @@ import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.network.CodecField;
 import org.cyclops.cyclopscore.network.PacketCodec;
 
-public class UpdateDisableRenderPacket extends PacketCodec {
+public class UpdateProxyDisableRenderPacket extends PacketCodec {
     @CodecField
     private BlockPos proxy_pos;
     @CodecField
@@ -18,9 +18,9 @@ public class UpdateDisableRenderPacket extends PacketCodec {
     @CodecField
     private boolean disable;
 
-    public UpdateDisableRenderPacket() { }
+    public UpdateProxyDisableRenderPacket() { }
 
-    public UpdateDisableRenderPacket(DimPos proxy_pos, boolean disable) {
+    public UpdateProxyDisableRenderPacket(DimPos proxy_pos, boolean disable) {
         this.proxy_pos = proxy_pos.getBlockPos();
         this.proxy_dim = proxy_pos.getWorldKey();
         this.disable = disable;

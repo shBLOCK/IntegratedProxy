@@ -179,7 +179,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public void changeDisableRender() {
         this.disable_render = !this.disable_render;
         markDirty();
-        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render));
+        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render));
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
@@ -364,7 +364,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
             IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (ServerPlayerEntity) event.getPlayer());
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render), (ServerPlayerEntity) event.getPlayer());
+            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render), (ServerPlayerEntity) event.getPlayer());
         }
     }
 
