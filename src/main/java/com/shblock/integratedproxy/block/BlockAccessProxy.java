@@ -67,6 +67,12 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
     }
 
     @Override
+    public void onReplaced(BlockState oldState, World world, BlockPos pos, BlockState newState, boolean isMoving) {
+        onDestroy(world, pos);
+        super.onReplaced(oldState, world, pos, newState, isMoving);
+    }
+
+    @Override
     public ActionResultType onBlockActivated(BlockState blockState, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult rayTraceResult) {
         if (!world.isRemote) {
             if (player.isSneaking()) {
