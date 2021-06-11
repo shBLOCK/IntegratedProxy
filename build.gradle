@@ -50,7 +50,7 @@ minecraft {
         client {
             workingDirectory project.file('run')
 
-            arg "-mixin.config=mixins.integrated_proxy.mod.json"
+            arg "-mixin.config=mixins.integrated_proxy.json"
 
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed. 
@@ -74,7 +74,7 @@ minecraft {
         server {
             workingDirectory project.file('run')
 
-            arg "-mixin.config=mixins.integrated_proxy.mod.json"
+            arg "-mixin.config=mixins.integrated_proxy.json"
 
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed. 
@@ -208,7 +208,7 @@ mixin {
 jar {
     manifest {
         attributes([
-                "MixinConfigs": "mixins.integrated_proxy.mod.json",
+                "MixinConfigs": "mixins.integrated_proxy.json",
                 "Specification-Title": "integrated_proxy",
                 "Specification-Vendor": "shBLOCK",
                 "Specification-Version": "${version}",

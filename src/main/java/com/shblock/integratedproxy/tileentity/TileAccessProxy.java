@@ -5,6 +5,7 @@ import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.id_network.AccessProxyNetworkElement;
 import com.shblock.integratedproxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integratedproxy.network.packet.*;
+import com.shblock.integratedproxy.storage.AccessProxyCollection;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -27,6 +28,7 @@ import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
 import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
+import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
 import org.cyclops.integrateddynamics.api.block.IVariableContainer;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
@@ -70,6 +72,8 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public DimPos target;
     public int pos_mode = 0;
     public int[] display_rotations = new int[]{0, 0, 0, 0, 0, 0};
+    private int[] redstone_powers = new int[]{0, 0, 0, 0, 0, 0};
+    private int[] strong_powers = new int[]{0, 0, 0, 0, 0, 0};
     public boolean disable_render = false;
 
     public TileAccessProxy() {
@@ -124,13 +128,13 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         NBTClassType.writeNbt(List.class, "errors_z", evaluator_z.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_display", evaluator_display.getErrors(), tag);
         tag.putIntArray("display_rotations", this.display_rotations);
-
         if (getDisplayValue() != null) {
 //            tag.setString("displayValueType", value.getType().getTranslationKey());
 //            tag.setString("displayValue", ValueHelpers.serializeRaw(value));
             tag.put("displayValue", ValueHelpers.serialize(getDisplayValue()));
         }
-
+        tag.putIntArray("rs_power", this.redstone_powers);
+        tag.putIntArray("strong_power", this.strong_powers);
         tag.putBoolean("disable_render", this.disable_render);
 
         return tag;
@@ -150,7 +154,12 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         } else {
             setDisplayValue(null);
         }
-
+        if (tag.contains("rs_power")) {
+            this.redstone_powers = tag.getIntArray("rs_power");
+        }
+        if (tag.contains("strong_power")) {
+            this.strong_powers = tag.getIntArray("strong_power");
+        }
         if (tag.contains("disable_render")) {
             this.disable_render = tag.getBoolean("disable_render");
         }
@@ -195,7 +204,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     private void updateTarget() {
-        if (!getWorld().isRemote) {
+        if (!this.world.isRemote) {
             DimPos old_target = this.target == null ? null : DimPos.of(this.target.getWorld(false), this.target.getBlockPos());
             try {
                 if (this.pos_mode == 1) {
@@ -221,12 +230,14 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                 this.target = DimPos.of(this.world, this.pos);
             }
 
-            if (!this.world.isRemote) {
-                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
-            }
-
             if (!this.target.equals(old_target)) {
                 notifyTargetChange();
+                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
+                AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
+                updateTargetBlock();
+                if (old_target != null) {
+                    updateTargetBlock(this.world, old_target.getBlockPos());
+                }
             }
         }
     }
@@ -262,6 +273,40 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         return evaluator.hasVariable() &&
                 evaluator.getVariable(getNetwork()).getType() instanceof ValueTypeInteger &&
                 evaluator.getErrors().isEmpty();
+    }
+
+    public boolean setSideRedstonePower(Direction side, IDynamicRedstone cap) {
+        int[] old_strong = this.strong_powers.clone();
+        int[] old_power = this.redstone_powers.clone();
+        if (cap != null) {
+            this.redstone_powers[side.getIndex()] = cap.getRedstoneLevel();
+            if (cap.isStrong()) {
+                this.strong_powers[side.getIndex()] = cap.getRedstoneLevel();
+            } else {
+                this.strong_powers[side.getIndex()] = 0;
+            }
+        } else {
+            this.redstone_powers[side.getIndex()] = 0;
+            this.strong_powers[side.getIndex()] = 0;
+        }
+        markDirty();
+        return this.redstone_powers != old_power || this.strong_powers != old_strong;
+    }
+
+    public int getRedstonePowerForTarget() {
+        int power = 0;
+        for (int i : this.redstone_powers) {
+            power = Math.max(power, i);
+        }
+        return power;
+    }
+
+    public int getStrongPowerForTarget() {
+        int power = 0;
+        for (int i : this.strong_powers) {
+            power = Math.max(power, i);
+        }
+        return power;
     }
 
     @Override
@@ -383,6 +428,17 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         for (Direction offset : Direction.values()) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
         }
+    }
+
+    public void updateTargetBlock(World world, BlockPos pos) {
+        world.notifyNeighborsOfStateChange(pos, world.getBlockState(pos).getBlock());
+        for (Direction side : Direction.values()) {
+            world.notifyNeighborsOfStateChange(pos.offset(side), world.getBlockState(pos).getBlock());
+        }
+    }
+
+    public void updateTargetBlock() {
+        updateTargetBlock(this.world, this.target.getBlockPos());
     }
 
     @SubscribeEvent

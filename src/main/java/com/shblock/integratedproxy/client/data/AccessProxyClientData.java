@@ -75,11 +75,11 @@ public class AccessProxyClientData {
     }
 
     public boolean getDisable(DimPos dimPos) {
-        return this.disable_map.get(dimPos);
+        return this.disable_map.getOrDefault(dimPos, false);
     }
 
     public boolean getDisable(BlockPos pos, RegistryKey<World> dim) {
-        return this.disable_map.get(DimPos.of(dim, pos));
+        return this.disable_map.getOrDefault(DimPos.of(dim, pos), false);
     }
 
     @SubscribeEvent

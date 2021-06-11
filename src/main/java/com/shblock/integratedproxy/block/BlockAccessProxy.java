@@ -1,17 +1,24 @@
 package com.shblock.integratedproxy.block;
 
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.vector.Vector3i;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import org.cyclops.cyclopscore.datastructure.DimPos;
+import org.cyclops.cyclopscore.helper.TileHelpers;
+import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
+import org.cyclops.integrateddynamics.capability.dynamicredstone.DynamicRedstoneConfig;
 import org.cyclops.integrateddynamics.core.block.BlockTileGuiCabled;
 import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
 
@@ -100,5 +107,24 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
             }
         }
         return ActionResultType.FAIL;
+    }
+
+    @Override
+    public void neighborChanged(BlockState state, World world, BlockPos pos, Block neighborBlock, BlockPos fromPos, boolean isMoving) {
+        super.neighborChanged(state, world, pos, neighborBlock, fromPos, isMoving);
+        if (neighborBlock instanceof BlockAccessProxy) {
+            return;
+        }
+        if (pos.getY() == fromPos.getY() && !world.isRemote) {
+            Vector3i facing_vec = fromPos.subtract(new Vector3i(pos.getX(), pos.getY(), pos.getZ()));
+            Direction facing = Direction.getFacingFromVector(facing_vec.getX(), facing_vec.getY(), facing_vec.getZ());
+            TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
+            if (te != null) {
+                IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, fromPos), facing.getOpposite(), DynamicRedstoneConfig.CAPABILITY).orElse(null);
+                if (te.setSideRedstonePower(facing, cap)) {
+                    te.updateTargetBlock();
+                }
+            }
+        }
     }
 }
