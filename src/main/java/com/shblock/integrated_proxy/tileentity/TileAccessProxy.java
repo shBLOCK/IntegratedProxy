@@ -216,6 +216,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                 notifyTargetChange();
                 IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
                 AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
+                updateTargetBlock();
+                if (old_target != null) {
+                    updateTargetBlock(this.world, old_target.getBlockPos());
+                }
             }
         }
     }
@@ -383,11 +387,15 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         }
     }
 
-    public void updateTargetBlock() {
-        this.world.notifyNeighborsOfStateChange(this.target.getBlockPos(), this.world.getBlockState(this.target.getBlockPos()).getBlock(), true);
+    public void updateTargetBlock(World world, BlockPos pos) {
+        world.notifyNeighborsOfStateChange(pos, world.getBlockState(pos).getBlock(), true);
         for (EnumFacing side : EnumFacing.VALUES) {
-            this.world.notifyNeighborsOfStateChange(this.target.getBlockPos().offset(side), this.world.getBlockState(this.target.getBlockPos()).getBlock(), true);
+            world.notifyNeighborsOfStateChange(pos.offset(side), world.getBlockState(pos).getBlock(), true);
         }
+    }
+
+    public void updateTargetBlock() {
+        updateTargetBlock(this.world, this.target.getBlockPos());
     }
 
     @SubscribeEvent
