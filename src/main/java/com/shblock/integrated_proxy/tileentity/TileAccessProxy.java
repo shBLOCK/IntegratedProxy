@@ -61,7 +61,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public DimPos target;
     public int pos_mode = 0;
     public int[] display_rotations = new int[]{0, 0, 0, 0, 0, 0};
-    public int[] redstone_powers = new int[]{0, 0, 0, 0, 0, 0};
+    private int[] redstone_powers = new int[]{0, 0, 0, 0, 0, 0};
     private int[] strong_powers = new int[]{0, 0, 0, 0, 0, 0};
     public boolean disable_render = false;
 
