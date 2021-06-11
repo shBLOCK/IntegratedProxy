@@ -15,6 +15,7 @@ public class AccessProxyClientData {
     private final HashMap<DimPos, DimPos> target_map = new HashMap<>();
     private final HashMap<DimPos, IValue> variable_map = new HashMap<>();
     private final HashMap<DimPos, int[]> rotation_map = new HashMap<>();
+    private final HashMap<DimPos, Boolean> disable_map = new HashMap<>();
 
     public static AccessProxyClientData getInstance() {
         return _instance;
@@ -32,10 +33,15 @@ public class AccessProxyClientData {
         this.rotation_map.put(proxy, value);
     }
 
+    public void putDisable(DimPos proxy, boolean disable) {
+        this.disable_map.put(proxy, disable);
+    }
+
     public void remove(DimPos proxy) {
         this.target_map.remove(proxy);
         this.variable_map.remove(proxy);
         this.rotation_map.remove(proxy);
+        this.disable_map.remove(proxy);
     }
 
     public HashMap<DimPos, DimPos> getTargetMap() {
@@ -66,12 +72,21 @@ public class AccessProxyClientData {
         return this.rotation_map.get(DimPos.of(dim, pos));
     }
 
+    public boolean getDisable(DimPos dimPos) {
+        return this.disable_map.getOrDefault(dimPos, false);
+    }
+
+    public boolean getDisable(BlockPos pos, int dim) {
+        return this.disable_map.get(DimPos.of(dim, pos));
+    }
+
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.player.equals(Minecraft.getMinecraft().player) && event.player.world.isRemote) {
             this.target_map.clear();
             this.variable_map.clear();
             this.rotation_map.clear();
+            this.disable_map.clear();
         }
     }
 }

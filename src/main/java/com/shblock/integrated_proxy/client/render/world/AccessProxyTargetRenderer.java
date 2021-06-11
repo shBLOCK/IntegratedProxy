@@ -38,7 +38,12 @@ public class AccessProxyTargetRenderer {
         double offsetZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double) partialTicks;
 
         for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
+            DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
+
+            if (AccessProxyClientData.getInstance().getDisable(proxy)) {
+                continue;
+            }
 
             Vec3d target_vec = new Vec3d(
                     target.getBlockPos().getX(),

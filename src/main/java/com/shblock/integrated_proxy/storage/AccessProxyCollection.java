@@ -19,9 +19,9 @@ public class AccessProxyCollection extends WorldSavedData {
     public static final String NAME = IntegratedProxy.MODID + "_access_proxy_collection";
     private HashMap<BlockPos, BlockPos> map = new HashMap<>();
 
-//    public AccessProxyCollection(String name) {
-//        this();
-//    }
+    public AccessProxyCollection(String name) {
+        this();
+    }
 
     public AccessProxyCollection() {
         super(NAME);

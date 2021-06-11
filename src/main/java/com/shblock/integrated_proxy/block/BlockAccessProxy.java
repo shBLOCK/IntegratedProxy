@@ -76,6 +76,10 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ) {
         if (!world.isRemote) {
             if (player.isSneaking()) {
+                if (player.getHeldItem(hand).isEmpty()) {
+                    ((TileAccessProxy) world.getTileEntity(pos)).changeDisableRender();
+                    return true;
+                }
                 return super.onBlockActivated(world, pos, state, player, hand, side, hitX, hitY, hitZ);
             } else {
                 if (WrenchHelpers.isWrench(player, player.getHeldItem(hand), world, pos, side)) {
@@ -86,12 +90,19 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
                 }
             }
         } else {
-            if (WrenchHelpers.isWrench(player, player.getHeldItem(hand), world, pos, side)) {
-                return true;
+            if (!player.isSneaking()) {
+                if (WrenchHelpers.isWrench(player, player.getHeldItem(hand), world, pos, side)) {
+                    return true;
+                } else {
+                    return super.onBlockActivated(world, pos, state, player, hand, side, hitX, hitY, hitZ);
+                }
             } else {
-                return super.onBlockActivated(world, pos, state, player, hand, side, hitX, hitY, hitZ);
+                if (player.getHeldItem(hand).isEmpty()) {
+                    return true;
+                }
             }
         }
+        return false;
     }
 
     @Override
