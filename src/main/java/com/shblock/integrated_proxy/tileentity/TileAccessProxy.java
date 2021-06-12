@@ -1,6 +1,7 @@
 package com.shblock.integrated_proxy.tileentity;
 
 import com.shblock.integrated_proxy.IntegratedProxy;
+import com.shblock.integrated_proxy.block.BlockAccessProxy;
 import com.shblock.integrated_proxy.id_network.AccessProxyNetworkElement;
 import com.shblock.integrated_proxy.network.packet.*;
 import com.shblock.integrated_proxy.storage.AccessProxyCollection;
@@ -397,9 +398,14 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void updateTargetBlock(World world, BlockPos pos) {
-        world.notifyNeighborsOfStateChange(pos, world.getBlockState(pos).getBlock(), true);
-        for (EnumFacing side : EnumFacing.VALUES) {
-            world.notifyNeighborsOfStateChange(pos.offset(side), world.getBlockState(pos).getBlock(), true);
+        for (EnumFacing facing : EnumFacing.VALUES) {
+            world.neighborChanged(pos, world.getBlockState(pos).getBlock(), pos.offset(facing));
+        }
+        for (EnumFacing facing : EnumFacing.VALUES) {
+            if (world.getBlockState(pos.offset(facing)).getBlock() instanceof BlockAccessProxy) {
+                continue;
+            }
+            world.neighborChanged(pos.offset(facing), world.getBlockState(pos.offset(facing)).getBlock(), pos);
         }
     }
 
