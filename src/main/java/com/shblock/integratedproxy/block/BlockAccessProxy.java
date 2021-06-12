@@ -1,5 +1,6 @@
 package com.shblock.integratedproxy.block;
 
+import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -15,13 +16,18 @@ import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.event.world.BlockEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.TileHelpers;
 import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
 import org.cyclops.integrateddynamics.capability.dynamicredstone.DynamicRedstoneConfig;
 import org.cyclops.integrateddynamics.core.block.BlockTileGuiCabled;
 import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
+import org.cyclops.integratedtunnels.core.ExtendedFakePlayer;
 
+@Mod.EventBusSubscriber(modid = IntegratedProxy.MODID)
 public class BlockAccessProxy extends BlockTileGuiCabled {
 
 //    private static BlockAccessProxy _instance;
@@ -124,6 +130,15 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
                 if (te.setSideRedstonePower(facing, cap)) {
                     te.updateTargetBlock();
                 }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockBreakEvent(BlockEvent.BreakEvent event) {
+        if (event.getWorld().getBlockState(event.getPos()).getBlock() instanceof BlockAccessProxy) {
+            if (event.getPlayer() instanceof ExtendedFakePlayer) {
+                event.setCanceled(true);
             }
         }
     }
