@@ -20,7 +20,7 @@ public class MixinPartTarget {
             return;
         }
         TileEntity te = orginal_pos.getPos().getWorld().getTileEntity(orginal_pos.getPos().getBlockPos());
-        if (te instanceof TileAccessProxy) {
+        if (te instanceof TileAccessProxy && ((TileAccessProxy) te).target != null) {
             callback.setReturnValue(PartPos.of(((TileAccessProxy) te).target, orginal_pos.getSide()));
         }
     }

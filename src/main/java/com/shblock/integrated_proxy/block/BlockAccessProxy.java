@@ -63,19 +63,25 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
         super.onBlockAdded(world, pos, state);
         if (!world.isRemote) {
             AccessProxyCollection.getInstance(world).set(pos, pos);
+            TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
+            if (te == null) {
+                return;
+            }
+            te.target = DimPos.of(te.getWorld(), te.getPos());
         }
     }
 
     @Override
     protected void onPreBlockDestroyed(World world, BlockPos pos) {
         if (!world.isRemote) {
-            if (world.getTileEntity(pos) == null) {
+            TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
+            if (te == null) {
                 return;
             }
-            ((TileAccessProxy) world.getTileEntity(pos)).sendRemoveRenderPacket();
-            ((TileAccessProxy) world.getTileEntity(pos)).unRegisterEventHandle();
+            te.sendRemoveRenderPacket();
+            te.unRegisterEventHandle();
             AccessProxyCollection.getInstance(world).remove(pos);
-            ((TileAccessProxy) world.getTileEntity(pos)).updateTargetBlock();
+            te.updateTargetBlock();
         }
         super.onPreBlockDestroyed(world, pos);
     }
