@@ -6,12 +6,20 @@ import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
+import org.cyclops.cyclopscore.config.ConfigurableProperty;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfig;
 
 public class BlockAccessProxyConfig extends BlockConfig {
 
 //    public static BlockAccessProxyConfig _instance;
     public static final String REGISTRY_NAME = IntegratedProxy.MODID + "access_proxy";
+
+    @ConfigurableProperty(
+            category = "block",
+            comment = "The max range of access proxy (square range, not radius), -1:infinite",
+            isCommandable = true,
+            minimalValue = -1)
+    public static int range = -1;
 
     public BlockAccessProxyConfig() {
         super(
