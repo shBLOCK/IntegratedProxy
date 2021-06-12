@@ -67,7 +67,7 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
             if (te == null) {
                 return;
             }
-            te.target = DimPos.of(te.getWorld(), te.getPos());
+            te.target = DimPos.of(world, pos);
         }
     }
 
