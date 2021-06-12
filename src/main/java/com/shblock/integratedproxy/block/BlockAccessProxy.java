@@ -19,6 +19,7 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.TileHelpers;
@@ -139,6 +140,7 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
 
     @SubscribeEvent
     public static void onBlockBreakEvent(BlockEvent.BreakEvent event) {
+        if (!ModList.get().isLoaded("integratedtunnels")) return;
         if (event.getWorld().getBlockState(event.getPos()).getBlock() instanceof BlockAccessProxy) {
             if (event.getPlayer() instanceof ExtendedFakePlayer) {
                 event.setCanceled(true);
