@@ -1,6 +1,7 @@
 package com.shblock.integratedproxy.mixin;
 
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
+import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
 import org.cyclops.integrateddynamics.api.part.PartPos;
 import org.cyclops.integrateddynamics.api.part.PartTarget;

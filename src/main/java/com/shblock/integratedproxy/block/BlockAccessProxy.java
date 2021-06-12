@@ -115,11 +115,11 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
         if (neighborBlock instanceof BlockAccessProxy) {
             return;
         }
-        if (pos.getY() == fromPos.getY() && !world.isRemote) {
+        if (!world.isRemote) {
             Vector3i facing_vec = fromPos.subtract(new Vector3i(pos.getX(), pos.getY(), pos.getZ()));
             Direction facing = Direction.getFacingFromVector(facing_vec.getX(), facing_vec.getY(), facing_vec.getZ());
             TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
-            if (te != null) {
+            if (te != null && world.isBlockLoaded(te.target.getBlockPos())) {
                 IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, fromPos), facing.getOpposite(), DynamicRedstoneConfig.CAPABILITY).orElse(null);
                 if (te.setSideRedstonePower(facing, cap)) {
                     te.updateTargetBlock();

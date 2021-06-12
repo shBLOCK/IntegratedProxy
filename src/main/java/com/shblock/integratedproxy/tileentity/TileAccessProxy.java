@@ -13,6 +13,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.profiler.Profiler;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
@@ -206,7 +207,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     private void updateTarget() {
         if (!this.world.isRemote) {
-            DimPos old_target = this.target == null ? null : DimPos.of(this.target.getWorld(false), this.target.getBlockPos());
+            DimPos old_target = this.target == null ? null : DimPos.of(this.target.getWorldKey(), this.target.getBlockPos());
             try {
                 if (this.pos_mode == 1) {
                     this.target = DimPos.of(
@@ -436,6 +437,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 //        for (Direction side : Direction.values()) {
 //            world.notifyNeighborsOfStateChange(pos.offset(side), world.getBlockState(pos).getBlock());
 //        }
+        if (!world.isBlockLoaded(pos)) return;
         for (Direction facing : Direction.values()) {
             world.neighborChanged(pos, world.getBlockState(pos).getBlock(), pos.offset(facing));
         }
@@ -451,7 +453,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @SubscribeEvent
     public void onTargetChanged(BlockEvent.NeighborNotifyEvent event) {
-        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.target.getWorld(false))) {
+        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
             notifyTargetChange();
         }
     }

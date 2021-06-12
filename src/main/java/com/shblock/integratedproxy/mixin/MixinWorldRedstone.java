@@ -34,12 +34,6 @@ public abstract class MixinWorldRedstone {
         ServerWorld world = server.getWorld(getDimensionKey());
         if (world == null) return;
         AccessProxyCollection data = AccessProxyCollection.getInstance(world);
-//        MapStorage storage = getPerWorldStorage();
-//        AccessProxyCollection data = (AccessProxyCollection) storage.getOrLoadData(AccessProxyCollection.class, AccessProxyCollection.NAME);
-//        if (data == null) {
-//            data = new AccessProxyCollection();
-//            storage.setData(AccessProxyCollection.NAME, data);
-//        }
         HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos.offset(facing.getOpposite()));
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
@@ -60,12 +54,6 @@ public abstract class MixinWorldRedstone {
         ServerWorld world = server.getWorld(getDimensionKey());
         if (world == null) return;
         AccessProxyCollection data = AccessProxyCollection.getInstance(world);
-//        MapStorage storage = getPerWorldStorage();
-//        AccessProxyCollection data = (AccessProxyCollection) storage.getOrLoadData(AccessProxyCollection.class, AccessProxyCollection.NAME);
-//        if (data == null) {
-//            data = new AccessProxyCollection();
-//            storage.setData(AccessProxyCollection.NAME, data);
-//        }
         HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos);
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
