@@ -16,7 +16,7 @@ public class MixinPartTarget {
     private void getTarget(CallbackInfoReturnable<PartPos> callback) {
         PartPos orginal_pos = target;
         TileEntity te = orginal_pos.getPos().getWorld(false).getTileEntity(orginal_pos.getPos().getBlockPos());
-        if (te instanceof TileAccessProxy) {
+        if (te instanceof TileAccessProxy && ((TileAccessProxy) te).target != null) {
             callback.setReturnValue(PartPos.of(((TileAccessProxy) te).target, orginal_pos.getSide()));
         }
     }
