@@ -116,7 +116,7 @@ dependencies {
 
 version = '1.0.4'
 group = 'com.shblock.integrated_proxy' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = 'integrated_proxy'
+archivesBaseName = 'integrated_proxy-1.12'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 

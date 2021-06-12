@@ -2,6 +2,7 @@ package com.shblock.integrated_proxy.tileentity;
 
 import com.shblock.integrated_proxy.IntegratedProxy;
 import com.shblock.integrated_proxy.block.BlockAccessProxy;
+import com.shblock.integrated_proxy.block.BlockAccessProxyConfig;
 import com.shblock.integrated_proxy.id_network.AccessProxyNetworkElement;
 import com.shblock.integrated_proxy.network.packet.*;
 import com.shblock.integrated_proxy.storage.AccessProxyCollection;
@@ -194,6 +195,15 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         return evaluator.getVariable(getNetwork()).getValue().cast(ValueTypes.INTEGER).getRawValue();
     }
 
+    private boolean isTargetOutOfRange(BlockPos target) {
+        if (BlockAccessProxyConfig.range < 0) {
+            return false;
+        }
+        return Math.abs(target.getX() - this.pos.getX()) > BlockAccessProxyConfig.range ||
+                Math.abs(target.getY() - this.pos.getY()) > BlockAccessProxyConfig.range ||
+                Math.abs(target.getZ() - this.pos.getZ()) > BlockAccessProxyConfig.range;
+    }
+
     private void updateTargetPos() {
         if (!getWorld().isRemote) {
             DimPos old_target = this.target == null ? null : DimPos.of(this.target.getDimensionId(), this.target.getBlockPos());
@@ -218,6 +228,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                     );
                 }
             } catch (EvaluationException e) {
+                this.target = DimPos.of(this.world, this.pos);
+            }
+
+            if (isTargetOutOfRange(this.target.getBlockPos())) {
                 this.target = DimPos.of(this.world, this.pos);
             }
 
