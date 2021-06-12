@@ -1,5 +1,6 @@
 package com.shblock.integrated_proxy.block;
 
+import com.shblock.integrated_proxy.IntegratedProxy;
 import com.shblock.integrated_proxy.client.gui.GuiAccessProxy;
 import com.shblock.integrated_proxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integrated_proxy.storage.AccessProxyCollection;
@@ -13,8 +14,10 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.event.world.BlockEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfig;
 import org.cyclops.cyclopscore.config.extendedconfig.ExtendedConfig;
 import org.cyclops.cyclopscore.datastructure.DimPos;
@@ -23,7 +26,9 @@ import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
 import org.cyclops.integrateddynamics.capability.dynamicredstone.DynamicRedstoneConfig;
 import org.cyclops.integrateddynamics.core.block.BlockContainerGuiCabled;
 import org.cyclops.integrateddynamics.core.helper.WrenchHelpers;
+import org.cyclops.integratedtunnels.core.ExtendedFakePlayer;
 
+@Mod.EventBusSubscriber(modid = IntegratedProxy.MODID)
 public class BlockAccessProxy extends BlockContainerGuiCabled {
 
     private static BlockAccessProxy _instance;
@@ -127,5 +132,14 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
     @Override
     public boolean isKeepNBTOnDrop() {
         return false;
+    }
+
+    @SubscribeEvent
+    public static void onBlockBreakEvent(BlockEvent.BreakEvent event) {
+        if (event.getWorld().getBlockState(event.getPos()).getBlock() instanceof BlockAccessProxy) {
+            if (event.getPlayer() instanceof ExtendedFakePlayer) {
+                event.setCanceled(true);
+            }
+        }
     }
 }
