@@ -58,6 +58,14 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
         return super.getCollisionShape(state, reader, pos);
     }
 
+    @Override
+    public void onBlockAdded(BlockState blockState, World world, BlockPos pos, BlockState oldState, boolean isMoving) {
+        super.onBlockAdded(blockState, world, pos, oldState, isMoving);
+        if (!world.isRemote) {
+            AccessProxyCollection.getInstance(world).set(pos, pos);
+        }
+    }
+
     private void onDestroy(IWorld world, BlockPos pos) {
         if (!world.isRemote()) {
             if (world.getTileEntity(pos) == null) {
