@@ -402,9 +402,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             world.neighborChanged(pos, world.getBlockState(pos).getBlock(), pos.offset(facing));
         }
         for (EnumFacing facing : EnumFacing.VALUES) {
-            if (world.getBlockState(pos.offset(facing)).getBlock() instanceof BlockAccessProxy) {
-                continue;
-            }
+            if (world.getBlockState(pos.offset(facing)).getBlock() instanceof BlockAccessProxy) continue;
             world.neighborChanged(pos.offset(facing), world.getBlockState(pos.offset(facing)).getBlock(), pos);
         }
     }
