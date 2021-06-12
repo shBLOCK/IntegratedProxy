@@ -1,6 +1,7 @@
 package com.shblock.integratedproxy.block;
 
 import com.shblock.integratedproxy.IntegratedProxy;
+import com.shblock.integratedproxy.storage.AccessProxyCollection;
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -63,6 +64,8 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
             }
             ((TileAccessProxy) world.getTileEntity(pos)).sendRemoveRenderPacket();
             ((TileAccessProxy) world.getTileEntity(pos)).unRegisterEventHandle();
+            AccessProxyCollection.getInstance((World) world).remove(pos);
+            ((TileAccessProxy) world.getTileEntity(pos)).updateTargetBlock();
         }
     }
 
