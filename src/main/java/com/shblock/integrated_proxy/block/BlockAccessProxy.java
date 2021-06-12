@@ -16,8 +16,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraftforge.event.world.BlockEvent;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.relauncher.libraries.ModList;
 import org.cyclops.cyclopscore.config.extendedconfig.BlockConfig;
 import org.cyclops.cyclopscore.config.extendedconfig.ExtendedConfig;
 import org.cyclops.cyclopscore.datastructure.DimPos;
@@ -137,6 +139,7 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
 
     @SubscribeEvent
     public static void onBlockBreakEvent(BlockEvent.BreakEvent event) {
+        if (!Loader.isModLoaded("integratedtunnels")) return;
         if (event.getWorld().getBlockState(event.getPos()).getBlock() instanceof BlockAccessProxy) {
             if (event.getPlayer() instanceof ExtendedFakePlayer) {
                 event.setCanceled(true);
