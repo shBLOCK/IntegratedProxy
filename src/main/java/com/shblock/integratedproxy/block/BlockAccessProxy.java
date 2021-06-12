@@ -63,6 +63,11 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
         super.onBlockAdded(blockState, world, pos, oldState, isMoving);
         if (!world.isRemote) {
             AccessProxyCollection.getInstance(world).set(pos, pos);
+            TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
+            if (te == null) {
+                return;
+            }
+            te.target = DimPos.of(te.getWorld(), te.getPos());
         }
     }
 
