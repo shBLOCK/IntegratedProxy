@@ -511,8 +511,12 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         if (this.target == null || isRemoved()) {
             return;
         }
-        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
-            notifyTargetChange();
+        try {
+            if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
+                notifyTargetChange();
+            }
+        } catch (NullPointerException e) {
+            IntegratedProxy.clog(Level.WARN, "NullPointerException at onTargetChanged!" + this.target.toString() + this.world.toString() + event.getWorld().toString());
         }
     }
 
