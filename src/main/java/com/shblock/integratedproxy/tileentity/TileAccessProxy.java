@@ -13,8 +13,8 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.profiler.Profiler;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
@@ -27,8 +27,11 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.InvWrapper;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
+import org.cyclops.cyclopscore.inventory.SimpleInventory;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
 import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
 import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
@@ -42,6 +45,7 @@ import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkE
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerConfig;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerDefault;
+import org.cyclops.integrateddynamics.capability.variablefacade.VariableFacadeHolderConfig;
 import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
@@ -50,6 +54,7 @@ import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementRemoveEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
+import org.cyclops.integrateddynamics.item.ItemVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -81,7 +86,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     public TileAccessProxy() {
         super(IPRegistryEntries.TILE_ACCESS_PROXY,4, 1);
-        this.getInventory().addDirtyMarkListener(this);
+        getInventory().addDirtyMarkListener(this);
 
         addCapabilityInternal(NetworkElementProviderConfig.CAPABILITY, LazyOptional.of(() -> new NetworkElementProviderSingleton() {
             @Override
@@ -90,32 +95,52 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             }
         }));
         this.variableContainer = new VariableContainerDefault();
-        addCapabilityInternal(VariableContainerConfig.CAPABILITY, LazyOptional.of(() -> variableContainer));
+        addCapabilityInternal(VariableContainerConfig.CAPABILITY, LazyOptional.of(() -> this.variableContainer));
         this.evaluator_x = new InventoryVariableEvaluator<>(getInventory(), SLOT_X, ValueTypes.INTEGER);
         this.evaluator_y = new InventoryVariableEvaluator<>(getInventory(), SLOT_Y, ValueTypes.INTEGER);
         this.evaluator_z = new InventoryVariableEvaluator<>(getInventory(), SLOT_Z, ValueTypes.INTEGER);
         this.evaluator_display = new InventoryVariableEvaluator<>(getInventory(), SLOT_DISPLAY, ValueTypes.CATEGORY_ANY);
     }
 
+    @Override
+    protected SimpleInventory createInventory(int inventorySize, int stackSize) {
+        return new SimpleInventory(inventorySize, stackSize) {
+            @Override
+            public boolean isItemValidForSlot(int i, ItemStack stack) {
+                return super.isItemValidForSlot(i, stack) && stack.getItem() instanceof ItemVariable;
+            }
 
+            @Override
+            public boolean canInsertItem(int index, ItemStack itemStackIn, @Nullable Direction direction) {
+                return false;
+            }
 
-//    @Override
-//    public boolean isItemValidForSlot(int index, ItemStack stack) {
-//        return super.isItemValidForSlot(index, stack) && (stack.isEmpty() || stack.hasCapability(VariableFacadeHolderConfig.CAPABILITY, (EnumFacing)null));
-//    }
+            @Override
+            public boolean canExtractItem(int index, ItemStack stack, Direction direction) {
+                return false;
+            }
 
+            @Override
+            public int[] getSlotsForFace(Direction side) {
+                return new int[]{};
+            }
 
+            @Override
+            public IItemHandler getItemHandler() {
+                return new InvWrapper(this) {
+                    @Override
+                    public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+                        return stack;
+                    }
 
-//    @Override
-//    public boolean canInsertItem(int slot, ItemStack itemStack, EnumFacing side) {
-//        return false;
-//    }
-//
-//    @Override
-//    public boolean canExtractItem(int slot, ItemStack itemStack, EnumFacing side) {
-//        return false;
-//    }
-
+                    @Override
+                    public ItemStack extractItem(int slot, int amount, boolean simulate) {
+                        return ItemStack.EMPTY;
+                    }
+                };
+            }
+        };
+    }
 
     @Override
     public CompoundNBT writeToItemStack(CompoundNBT tag) {
