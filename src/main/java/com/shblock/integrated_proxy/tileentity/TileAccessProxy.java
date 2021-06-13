@@ -420,15 +420,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         for (EnumFacing offset : EnumFacing.VALUES) {
             world.neighborChanged(pos.offset(offset), BlockAccessProxy.getInstance(), pos);
         }
-        for (EnumFacing offset : EnumFacing.VALUES) {
-            try {
-                NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
-            } catch (NullPointerException ignored) {
-            }
-        }
+        refreshFacePartNetwork(world, pos);
     }
 
-    public synchronized void notifyTargetChange() {
+    public void notifyTargetChange() {
         for (EnumFacing offset : EnumFacing.VALUES) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockType(), this.pos);
         }
@@ -436,12 +431,16 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
+        refreshFacePartNetwork(this.world, this.pos);
+    }
+
+    public static void refreshFacePartNetwork(World world, BlockPos pos) { //refresh the network of parts on the 6 face of access proxy block
         if (Loader.isModLoaded("integratedtunnels")) {
             for (EnumFacing offset : EnumFacing.VALUES) {
                 try {
-                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(this.world, this.pos.offset(offset), offset.getOpposite()));
+                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset), offset.getOpposite()));
                     if (partStateHolder != null && partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
-                        NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
+                        NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
                     }
                 } catch (NullPointerException | ConcurrentModificationException ignored) {
                 }
