@@ -26,8 +26,10 @@ import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
 import org.cyclops.integrateddynamics.api.block.IVariableContainer;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
+import org.cyclops.integrateddynamics.api.network.INetwork;
 import org.cyclops.integrateddynamics.api.network.INetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetworkEventListener;
+import org.cyclops.integrateddynamics.api.network.IPartNetwork;
 import org.cyclops.integrateddynamics.api.network.event.INetworkEvent;
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderConfig;
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
@@ -38,6 +40,8 @@ import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
+import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
+import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
 
@@ -86,7 +90,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
-        return super.isItemValidForSlot(index, stack) && (stack.isEmpty() || stack.hasCapability(VariableFacadeHolderConfig.CAPABILITY, (EnumFacing)null));
+        return super.isItemValidForSlot(index, stack) && (stack.isEmpty() || stack.hasCapability(VariableFacadeHolderConfig.CAPABILITY, null));
     }
 
     @Override
@@ -236,6 +240,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             }
 
             if (!this.target.equals(old_target)) {
+                markDirty();
                 notifyTargetChange();
                 IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
                 AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
@@ -408,6 +413,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public void notifyTargetChange() {
         for (EnumFacing offset : EnumFacing.VALUES) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockType(), this.pos);
+            try {
+                NetworkHelpers.onElementProviderBlockNeighborChange(this.world, this.pos.offset(offset), this.world.getBlockState(this.target.getBlockPos()).getBlock(), null, this.target.getBlockPos());
+            } catch (NullPointerException ignored) { }
         }
     }
 

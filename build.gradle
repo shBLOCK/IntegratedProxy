@@ -138,7 +138,6 @@ minecraft {
         client {
             workingDirectory project.file('run')
 
-            arg "--mixin=mixins.integrated_proxy.json"
             arg "--tweakClass=org.spongepowered.asm.launch.MixinTweaker"
             jvmArg("-Dfml.coreMods.load=com.shblock.integrated_proxy.mixin.MixinLoader")
 
@@ -150,7 +149,6 @@ minecraft {
         }
 
         server {
-            arg "--mixin=mixins.integrated_proxy.json"
             arg "--tweakClass=org.spongepowered.asm.launch.MixinTweaker"
             jvmArg("-Dfml.coreMods.load=com.shblock.integrated_proxy.mixin.MixinLoader")
 
