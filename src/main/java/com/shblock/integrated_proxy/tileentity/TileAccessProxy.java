@@ -16,8 +16,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.BlockEvent;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
+import net.minecraftforge.fml.relauncher.libraries.ModList;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
@@ -31,6 +33,7 @@ import org.cyclops.integrateddynamics.api.network.INetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetworkEventListener;
 import org.cyclops.integrateddynamics.api.network.IPartNetwork;
 import org.cyclops.integrateddynamics.api.network.event.INetworkEvent;
+import org.cyclops.integrateddynamics.api.part.PartPos;
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderConfig;
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerConfig;
@@ -41,10 +44,13 @@ import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
+import org.cyclops.integrateddynamics.core.helper.PartHelpers;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
+import org.cyclops.integratedtunnels.core.part.PartTypeInterfacePositionedAddon;
 
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -173,7 +179,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     public void rotateDisplayValue(EnumFacing side) {
         int ord = side.getIndex();
-        this.display_rotations[ord] ++;
+        this.display_rotations[ord]++;
         if (this.display_rotations[ord] >= 4) {
             this.display_rotations[ord] = 0;
         }
@@ -417,11 +423,12 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         for (EnumFacing offset : EnumFacing.VALUES) {
             try {
                 NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
-            } catch (NullPointerException ignored) { }
+            } catch (NullPointerException ignored) {
+            }
         }
     }
 
-    public void notifyTargetChange() {
+    public synchronized void notifyTargetChange() {
         for (EnumFacing offset : EnumFacing.VALUES) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockType(), this.pos);
         }
@@ -429,10 +436,16 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
-        for (EnumFacing offset : EnumFacing.VALUES) {
-            try {
-                NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
-            } catch (NullPointerException ignored) { }
+        if (Loader.isModLoaded("integratedtunnels")) {
+            for (EnumFacing offset : EnumFacing.VALUES) {
+                try {
+                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(this.world, this.pos.offset(offset), offset.getOpposite()));
+                    if (partStateHolder != null && partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
+                        NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
+                    }
+                } catch (NullPointerException | ConcurrentModificationException ignored) {
+                }
+            }
         }
     }
 
