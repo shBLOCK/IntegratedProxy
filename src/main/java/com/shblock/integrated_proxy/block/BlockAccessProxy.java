@@ -81,9 +81,14 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
             te.sendRemoveRenderPacket();
             te.unRegisterEventHandle();
             AccessProxyCollection.getInstance(world).remove(pos);
-            te.updateTargetBlock();
         }
         super.onPreBlockDestroyed(world, pos);
+    }
+
+    @Override
+    protected void onPostBlockDestroyed(World world, BlockPos pos) {
+        super.onPostBlockDestroyed(world, pos);
+        TileAccessProxy.updateAfterBlockDestroy(world, pos);
     }
 
     @Override
