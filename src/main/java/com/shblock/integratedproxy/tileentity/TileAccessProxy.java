@@ -26,6 +26,8 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoader;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
@@ -42,6 +44,7 @@ import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
 import org.cyclops.integrateddynamics.api.network.INetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetworkEventListener;
 import org.cyclops.integrateddynamics.api.network.event.INetworkEvent;
+import org.cyclops.integrateddynamics.api.part.PartPos;
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderConfig;
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerConfig;
@@ -52,11 +55,13 @@ import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
 import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
+import org.cyclops.integrateddynamics.core.helper.PartHelpers;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementRemoveEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
 import org.cyclops.integrateddynamics.item.ItemVariable;
+import org.cyclops.integratedtunnels.core.part.PartTypeInterfacePositionedAddon;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -480,10 +485,17 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
-        for (Direction offset : Direction.values()) {
-            try {
-                NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
-            } catch (NullPointerException ignored) { }
+        if (ModList.get().isLoaded("integratedtunnels")) {
+            for (Direction offset : Direction.values()) {
+                try {
+                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(this.world, this.pos.offset(offset), offset.getOpposite()));
+                    if (partStateHolder != null && partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
+                        NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
+                    }
+                } catch (NullPointerException | ConcurrentModificationException e) {
+                    IntegratedProxy.clog(Level.WARN, "refreshFacePartNetwork failed");
+                }
+            }
         }
     }
 
