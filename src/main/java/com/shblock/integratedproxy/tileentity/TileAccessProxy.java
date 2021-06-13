@@ -466,11 +466,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         for (Direction offset : Direction.values()) {
             world.neighborChanged(pos.offset(offset), IPRegistryEntries.BLOCK_ACCESS_PROXY, pos);
         }
-        for (Direction offset : Direction.values()) {
-            try {
-                NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
-            } catch (NullPointerException | ConcurrentModificationException ignored) { }
-        }
+        refreshFacePartNetwork(world, pos);
     }
 
     private void notifyTargetChange() {
@@ -485,12 +481,16 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
+        refreshFacePartNetwork(this.world, this.pos);
+    }
+
+    public static void refreshFacePartNetwork(World world, BlockPos pos) { //refresh the network of parts on the 6 face of access proxy block
         if (ModList.get().isLoaded("integratedtunnels")) {
             for (Direction offset : Direction.values()) {
                 try {
-                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(this.world, this.pos.offset(offset), offset.getOpposite()));
+                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset), offset.getOpposite()));
                     if (partStateHolder != null && partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
-                        NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
+                        NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
                     }
                 } catch (NullPointerException | ConcurrentModificationException e) {
                     IntegratedProxy.clog(Level.WARN, "refreshFacePartNetwork failed");
