@@ -413,9 +413,6 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public void notifyTargetChange() {
         for (EnumFacing offset : EnumFacing.VALUES) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockType(), this.pos);
-            try {
-                NetworkHelpers.onElementProviderBlockNeighborChange(this.world, this.pos.offset(offset), this.world.getBlockState(this.target.getBlockPos()).getBlock(), null, this.target.getBlockPos());
-            } catch (NullPointerException ignored) { }
         }
     }
 

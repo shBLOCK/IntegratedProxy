@@ -30,13 +30,9 @@ public class ModMixinLoader {
 
     @Inject(method = "loadMods", at = @At(value = "INVOKE", target = "Lnet/minecraftforge/fml/common/LoadController;transition(Lnet/minecraftforge/fml/common/LoaderState;Z)V", ordinal = 1), remap = false)
     private void beforeConstructingMods(List<String> injectedModContainers, CallbackInfo ci) {
-        boolean have_IT = false;
         for (ModContainer mod : mods) {
             try {
                 modClassLoader.addFile(mod.getSource());
-                if (mod.getModId().equals("integratedtunnels")) {
-                    have_IT = true;
-                }
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }
@@ -44,10 +40,6 @@ public class ModMixinLoader {
 
         MixinEnvironment.getEnvironment(MixinEnvironment.Phase.DEFAULT).addConfiguration("mixins.integrated_proxy.mod.json");
         Logger.getGlobal().log(Level.INFO,"Added mixin config: mixins.integrated_proxy.mod.json");
-        if (have_IT) {
-            MixinEnvironment.getEnvironment(MixinEnvironment.Phase.DEFAULT).addConfiguration("mixins.integrated_proxy.tunnels_patch.json");
-            Logger.getGlobal().log(Level.INFO,"Added mixin config: mixins.integrated_proxy.tunnels_patch.json");
-        }
 
         Proxy mixinProxy = (Proxy) Launch.classLoader.getTransformers().stream().filter(transformer -> transformer instanceof Proxy).findFirst().get();
         try {
