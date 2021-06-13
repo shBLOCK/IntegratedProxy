@@ -17,6 +17,7 @@ import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.event.entity.living.LivingDestroyBlockEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
@@ -73,13 +74,15 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
 
     private void onDestroy(IWorld world, BlockPos pos) {
         if (!world.isRemote()) {
-            if (world.getTileEntity(pos) == null) {
-                return;
-            }
-            ((TileAccessProxy) world.getTileEntity(pos)).sendRemoveRenderPacket();
-            ((TileAccessProxy) world.getTileEntity(pos)).unRegisterEventHandle();
+            TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
+            if (te == null) return;
+            if (te.isRemoved() || te.target == null) return;
+            te.sendRemoveRenderPacket();
+            te.unRegisterEventHandle();
             AccessProxyCollection.getInstance((World) world).remove(pos);
-            ((TileAccessProxy) world.getTileEntity(pos)).updateTargetBlock();
+            te.updateTargetBlock();
+            te.target = null;
+            TileAccessProxy.updateAfterBlockDestroy((World) world, pos);
         }
     }
 

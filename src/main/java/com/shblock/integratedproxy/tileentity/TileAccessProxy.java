@@ -29,6 +29,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import org.apache.logging.log4j.Level;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.inventory.SimpleInventory;
@@ -50,6 +51,7 @@ import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypes;
+import org.cyclops.integrateddynamics.core.helper.NetworkHelpers;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementRemoveEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
@@ -57,10 +59,7 @@ import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInvent
 import org.cyclops.integrateddynamics.item.ItemVariable;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class TileAccessProxy extends TileCableConnectableInventory implements IDirtyMarkListener, INetworkEventListener<AccessProxyNetworkElement>, INamedContainerProvider {
 
@@ -446,20 +445,28 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             unRegisterEventHandle();
             return;
         }
-        if (!event.getPlayer().world.isRemote) {
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (ServerPlayerEntity) event.getPlayer());
-            IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render), (ServerPlayerEntity) event.getPlayer());
+        try {
+            if (!event.getPlayer().world.isRemote) {
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (ServerPlayerEntity) event.getPlayer());
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render), (ServerPlayerEntity) event.getPlayer());
+            }
+        } catch (NullPointerException e) {
+            IntegratedProxy.clog(Level.ERROR, "Failed to sync proxy render data with client!");
         }
     }
 
-//    @SubscribeEvent
-//    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-//        if (event.player.world.isRemote) {
-//            MinecraftForge.EVENT_BUS.unregister(this);
-//        }
-//    }
+    public static void updateAfterBlockDestroy(World world, BlockPos pos) {
+        for (Direction offset : Direction.values()) {
+            world.neighborChanged(pos.offset(offset), IPRegistryEntries.BLOCK_ACCESS_PROXY, pos);
+        }
+        for (Direction offset : Direction.values()) {
+            try {
+                NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
+            } catch (NullPointerException | ConcurrentModificationException ignored) { }
+        }
+    }
 
     private void notifyTargetChange() {
         if (this.isRemoved()) {
@@ -468,6 +475,15 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         }
         for (Direction offset : Direction.values()) {
             this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
+        }
+        refreshFacePartNetwork();
+    }
+
+    public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
+        for (Direction offset : Direction.values()) {
+            try {
+                NetworkHelpers.initNetwork(this.world, this.pos.offset(offset), offset.getOpposite());
+            } catch (NullPointerException ignored) { }
         }
     }
 
@@ -492,6 +508,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @SubscribeEvent
     public void onTargetChanged(BlockEvent.NeighborNotifyEvent event) {
+        if (this.target == null || isRemoved()) {
+            return;
+        }
         if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
             notifyTargetChange();
         }
