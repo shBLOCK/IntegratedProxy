@@ -222,10 +222,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
-//        this.variableContainer.refreshVariables(this.getNetwork(), getInventory(), sendVariablesUpdateEvent);
-        this.evaluator_x.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
-        this.evaluator_y.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
-        this.evaluator_z.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
+        this.evaluator_x.refreshVariable(getNetwork(), false);
+        this.evaluator_y.refreshVariable(getNetwork(), false);
+        this.evaluator_z.refreshVariable(getNetwork(), false);
         this.evaluator_display.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
     }
 
