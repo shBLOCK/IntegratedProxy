@@ -65,10 +65,13 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
         if (!world.isRemote) {
             AccessProxyCollection.getInstance(world).set(pos, pos);
             TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
-//            if (te == null) {
-//                return;
-//            }
             te.target = DimPos.of(world, pos);
+            for (Direction facing : Direction.values()) {
+                if (te.target != null && world.isBlockLoaded(te.target.getBlockPos()) && !te.isRemoved()) {
+                    IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, pos.offset(facing)), facing.getOpposite(), DynamicRedstoneConfig.CAPABILITY).orElse(null);
+                    te.setSideRedstonePower(facing, cap);
+                }
+            }
         }
     }
 
@@ -145,7 +148,7 @@ public class BlockAccessProxy extends BlockTileGuiCabled {
             Vector3i facing_vec = fromPos.subtract(new Vector3i(pos.getX(), pos.getY(), pos.getZ()));
             Direction facing = Direction.getFacingFromVector(facing_vec.getX(), facing_vec.getY(), facing_vec.getZ());
             TileAccessProxy te = (TileAccessProxy) world.getTileEntity(pos);
-            if (te != null && world.isBlockLoaded(te.target.getBlockPos()) && te.target != null && !te.isRemoved()) {
+            if (te != null && te.target != null && world.isBlockLoaded(te.target.getBlockPos()) && !te.isRemoved()) {
                 IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, fromPos), facing.getOpposite(), DynamicRedstoneConfig.CAPABILITY).orElse(null);
                 if (te.setSideRedstonePower(facing, cap)) {
                     te.updateTargetBlock();

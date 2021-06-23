@@ -27,7 +27,6 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoader;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
@@ -49,7 +48,6 @@ import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkE
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerConfig;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerDefault;
-import org.cyclops.integrateddynamics.capability.variablefacade.VariableFacadeHolderConfig;
 import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
@@ -224,7 +222,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
-        this.variableContainer.refreshVariables(this.getNetwork(), getInventory(), sendVariablesUpdateEvent);
+//        this.variableContainer.refreshVariables(this.getNetwork(), getInventory(), sendVariablesUpdateEvent);
         this.evaluator_x.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
         this.evaluator_y.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
         this.evaluator_z.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
@@ -276,7 +274,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             }
 
             if (!this.target.equals(old_target)) {
-                notifyTargetChange();
+                if (old_target != null) notifyTargetChange();
                 IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
                 AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
                 updateTargetBlock();
@@ -466,7 +464,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         for (Direction offset : Direction.values()) {
             world.neighborChanged(pos.offset(offset), IPRegistryEntries.BLOCK_ACCESS_PROXY, pos);
         }
-        refreshFacePartNetwork(world, pos);
+//        refreshFacePartNetwork(world, pos);
     }
 
     private void notifyTargetChange() {
@@ -494,6 +492,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                     }
                 } catch (NullPointerException | ConcurrentModificationException e) {
                     IntegratedProxy.clog(Level.WARN, "refreshFacePartNetwork failed");
+                    e.printStackTrace();
                 }
             }
         }
@@ -520,7 +519,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @SubscribeEvent
     public void onTargetChanged(BlockEvent.NeighborNotifyEvent event) {
-        if (this.target == null || isRemoved()) {
+        if (this.target == null || isRemoved() || this.target.getBlockPos() == this.pos) {
             return;
         }
         try {
