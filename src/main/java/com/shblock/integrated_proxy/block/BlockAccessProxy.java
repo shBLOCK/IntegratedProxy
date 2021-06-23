@@ -67,6 +67,12 @@ public class BlockAccessProxy extends BlockContainerGuiCabled {
                 return;
             }
             te.target = DimPos.of(world, pos);
+            for (EnumFacing facing : EnumFacing.values()) {
+                if (te.target != null && world.isBlockLoaded(te.target.getBlockPos()) && !te.isInvalid()) {
+                    IDynamicRedstone cap = TileHelpers.getCapability(DimPos.of(world, pos.offset(facing)), facing.getOpposite(), DynamicRedstoneConfig.CAPABILITY);
+                    te.setSideRedstonePower(facing, cap);
+                }
+            }
         }
     }
 

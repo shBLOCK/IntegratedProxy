@@ -194,10 +194,10 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
-        this.variableContainer.refreshVariables(this.getNetwork(), this.inventory, sendVariablesUpdateEvent);
-        this.evaluator_x.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
-        this.evaluator_y.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
-        this.evaluator_z.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
+//        this.variableContainer.refreshVariables(this.getNetwork(), this.inventory, sendVariablesUpdateEvent);
+        this.evaluator_x.refreshVariable(getNetwork(), false);
+        this.evaluator_y.refreshVariable(getNetwork(), false);
+        this.evaluator_z.refreshVariable(getNetwork(), false);
         this.evaluator_display.refreshVariable(getNetwork(), sendVariablesUpdateEvent);
     }
 
@@ -246,8 +246,8 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             }
 
             if (!this.target.equals(old_target)) {
-                markDirty();
-                notifyTargetChange();
+//                markDirty();
+                if (old_target != null) notifyTargetChange();
                 IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
                 AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
                 updateTargetBlock();
@@ -460,7 +460,9 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public void updateTargetBlock() {
-        updateTargetBlock(this.world, this.target.getBlockPos());
+        if (this.target != null) {
+            updateTargetBlock(this.world, this.target.getBlockPos());
+        }
     }
 
     @SubscribeEvent
