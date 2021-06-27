@@ -1,5 +1,6 @@
 package com.shblock.integrated_proxy.mixin;
 
+import com.shblock.integrated_proxy.IntegratedProxy;
 import com.shblock.integrated_proxy.storage.AccessProxyCollection;
 import com.shblock.integrated_proxy.tileentity.TileAccessProxy;
 import net.minecraft.server.MinecraftServer;
@@ -11,6 +12,7 @@ import net.minecraft.world.WorldProvider;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.storage.MapStorage;
+import org.apache.logging.log4j.Level;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -38,19 +40,16 @@ public abstract class MixinWorldRedstone {
         WorldServer world = server.getWorld(this.provider.getDimension());
         if (world == null) return;
         AccessProxyCollection data = AccessProxyCollection.getInstance(world);
-//        MapStorage storage = getPerWorldStorage();
-//        AccessProxyCollection data = (AccessProxyCollection) storage.getOrLoadData(AccessProxyCollection.class, AccessProxyCollection.NAME);
-//        if (data == null) {
-//            data = new AccessProxyCollection();
-//            storage.setData(AccessProxyCollection.NAME, data);
-//        }
         HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos.offset(facing.getOpposite()));
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
             for (BlockPos proxy : proxies) {
-                TileAccessProxy tile = (TileAccessProxy) this.getTileEntity(proxy);
-                if (tile != null) {
-                    max_power = Math.max(max_power, tile.getRedstonePowerForTarget());
+                TileEntity tile = getTileEntity(proxy);
+                if (tile instanceof TileAccessProxy) {
+                    max_power = Math.max(max_power, ((TileAccessProxy) tile).getRedstonePowerForTarget());
+                } else {
+                    data.remove(proxy);
+                    IntegratedProxy.clog(Level.WARN, "Found a tile that's not AccessProxy in AccessProxyCollection, removing: " + proxy.toString());
                 }
             }
             callback.setReturnValue(max_power);
@@ -64,19 +63,16 @@ public abstract class MixinWorldRedstone {
         WorldServer world = server.getWorld(this.provider.getDimension());
         if (world == null) return;
         AccessProxyCollection data = AccessProxyCollection.getInstance(world);
-//        MapStorage storage = getPerWorldStorage();
-//        AccessProxyCollection data = (AccessProxyCollection) storage.getOrLoadData(AccessProxyCollection.class, AccessProxyCollection.NAME);
-//        if (data == null) {
-//            data = new AccessProxyCollection();
-//            storage.setData(AccessProxyCollection.NAME, data);
-//        }
         HashSet<BlockPos> proxies = data.getProxiesFromTarget(pos.offset(facing.getOpposite()));
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
             for (BlockPos proxy : proxies) {
-                TileAccessProxy tile = (TileAccessProxy) this.getTileEntity(proxy);
-                if (tile != null) {
-                    max_power = Math.max(max_power, tile.getStrongPowerForTarget());
+                TileEntity tile = getTileEntity(proxy);
+                if (tile instanceof TileAccessProxy) {
+                    max_power = Math.max(max_power, ((TileAccessProxy) tile).getStrongPowerForTarget());
+                } else {
+                    data.remove(proxy);
+                    IntegratedProxy.clog(Level.WARN, "Found a tile that's not AccessProxy in AccessProxyCollection, removing: " + proxy.toString());
                 }
             }
             callback.setReturnValue(max_power);
