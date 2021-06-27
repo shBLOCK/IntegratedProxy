@@ -1,5 +1,6 @@
 package com.shblock.integratedproxy.mixin;
 
+import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.storage.AccessProxyCollection;
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
 import net.minecraft.server.MinecraftServer;
@@ -9,6 +10,7 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import org.apache.logging.log4j.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,9 +40,12 @@ public abstract class MixinWorldRedstone {
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
             for (BlockPos proxy : proxies) {
-                TileAccessProxy tile = (TileAccessProxy) getTileEntity(proxy);
-                if (tile != null) {
-                    max_power = Math.max(max_power, tile.getRedstonePowerForTarget());
+                TileEntity tile = getTileEntity(proxy);
+                if (tile instanceof TileAccessProxy) {
+                    max_power = Math.max(max_power, ((TileAccessProxy) tile).getRedstonePowerForTarget());
+                } else {
+                    data.remove(proxy);
+                    IntegratedProxy.clog(Level.WARN, "Found a tile that's not AccessProxy in AccessProxyCollection, removing: " + proxy.toString());
                 }
             }
             callback.setReturnValue(max_power);
@@ -58,9 +63,12 @@ public abstract class MixinWorldRedstone {
         if (!proxies.isEmpty()) {
             int max_power = callback.getReturnValue();
             for (BlockPos proxy : proxies) {
-                TileAccessProxy tile = (TileAccessProxy) getTileEntity(proxy);
-                if (tile != null) {
-                    max_power = Math.max(max_power, tile.getStrongPowerForTarget());
+                TileEntity tile = getTileEntity(proxy);
+                if (tile instanceof TileAccessProxy) {
+                    max_power = Math.max(max_power, ((TileAccessProxy) tile).getStrongPowerForTarget());
+                } else {
+                    data.remove(proxy);
+                    IntegratedProxy.clog(Level.WARN, "Found a tile that's not AccessProxy in AccessProxyCollection, removing: " + proxy.toString());
                 }
             }
             callback.setReturnValue(max_power);
