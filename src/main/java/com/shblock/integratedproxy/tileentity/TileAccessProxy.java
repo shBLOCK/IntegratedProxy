@@ -19,6 +19,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.Constants;
@@ -59,6 +60,7 @@ import org.cyclops.integrateddynamics.core.network.event.NetworkElementRemoveEve
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
 import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
 import org.cyclops.integrateddynamics.item.ItemVariable;
+import org.cyclops.integrateddynamics.part.PartTypeBlockReader;
 import org.cyclops.integratedtunnels.core.part.PartTypeInterfacePositionedAddon;
 
 import javax.annotation.Nullable;
@@ -467,14 +469,18 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     private void notifyTargetChange() {
-        if (this.isRemoved()) {
-            unRegisterEventHandle();
-            return;
+        try {
+            if (this.isRemoved()) {
+                unRegisterEventHandle();
+                return;
+            }
+            for (Direction offset : Direction.values()) {
+                this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
+            }
+            refreshFacePartNetwork();
+        } catch (NullPointerException e) {
+            IntegratedProxy.clog(Level.WARN, "NullPointerException at onTargetChanged!   " + this.target.toString() + "   " + this.world.toString());
         }
-        for (Direction offset : Direction.values()) {
-            this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
-        }
-        refreshFacePartNetwork();
     }
 
     public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
@@ -482,17 +488,22 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     public static void refreshFacePartNetwork(World world, BlockPos pos) { //refresh the network of parts on the 6 face of access proxy block
-        if (ModList.get().isLoaded("integratedtunnels")) {
-            for (Direction offset : Direction.values()) {
-                try {
-                    PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset), offset.getOpposite()));
-                    if (partStateHolder != null && partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
+        for (Direction offset : Direction.values()) {
+            try {
+                PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset), offset.getOpposite()));
+                if (partStateHolder != null) {
+                    if (ModList.get().isLoaded("integratedtunnels")) {
+                        if (partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
+                            NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
+                        }
+                    }
+                    if (partStateHolder.getPart() instanceof PartTypeBlockReader) {
                         NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
                     }
-                } catch (NullPointerException | ConcurrentModificationException e) {
-                    IntegratedProxy.clog(Level.WARN, "refreshFacePartNetwork failed");
-                    e.printStackTrace();
                 }
+            } catch (NullPointerException | ConcurrentModificationException e) {
+                IntegratedProxy.clog(Level.WARN, "refreshFacePartNetwork failed");
+                e.printStackTrace();
             }
         }
     }
@@ -516,17 +527,32 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         updateTargetBlock(this.world, this.target.getBlockPos());
     }
 
-    @SubscribeEvent
-    public void onTargetChanged(BlockEvent.NeighborNotifyEvent event) {
+    public void onTargetChanged(IWorld world, BlockPos pos) {
         if (this.target == null || isRemoved() || this.target.getBlockPos() == this.pos) {
             return;
         }
-        try {
-            if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
-                notifyTargetChange();
+        if (pos.equals(this.target.getBlockPos()) && world.equals(this.world)) {
+            notifyTargetChange();
+        }
+    }
+
+    @SubscribeEvent
+    public void onNeighborNotifyEvent(BlockEvent.NeighborNotifyEvent event) {
+        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
+            onTargetChanged(event.getWorld(), event.getPos());
+        }
+        for (Direction facing : event.getNotifiedSides()) {
+            BlockPos offset_pos = event.getPos().offset(facing);
+            if (offset_pos.equals(this.target.getBlockPos())) {
+                onTargetChanged(event.getWorld(), offset_pos);
             }
-        } catch (NullPointerException e) {
-            IntegratedProxy.clog(Level.WARN, "NullPointerException at onTargetChanged!" + this.target.toString() + this.world.toString() + event.getWorld().toString());
+        }
+    }
+
+    @SubscribeEvent
+    public void onCropGrowEvent(BlockEvent.CropGrowEvent.Post event) {
+        if (!event.getWorld().isRemote()) {
+            onTargetChanged(event.getWorld(), event.getPos());
         }
     }
 
