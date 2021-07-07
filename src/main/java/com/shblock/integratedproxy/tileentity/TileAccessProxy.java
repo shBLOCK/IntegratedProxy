@@ -538,13 +538,15 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @SubscribeEvent
     public void onNeighborNotifyEvent(BlockEvent.NeighborNotifyEvent event) {
-        if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
-            onTargetChanged(event.getWorld(), event.getPos());
-        }
-        for (Direction facing : event.getNotifiedSides()) {
-            BlockPos offset_pos = event.getPos().offset(facing);
-            if (offset_pos.equals(this.target.getBlockPos())) {
-                onTargetChanged(event.getWorld(), offset_pos);
+        if (this.target != null && !isRemoved()) {
+            if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
+                onTargetChanged(event.getWorld(), event.getPos());
+            }
+            for (Direction facing : event.getNotifiedSides()) {
+                BlockPos offset_pos = event.getPos().offset(facing);
+                if (offset_pos.equals(this.target.getBlockPos())) {
+                    onTargetChanged(event.getWorld(), offset_pos);
+                }
             }
         }
     }
