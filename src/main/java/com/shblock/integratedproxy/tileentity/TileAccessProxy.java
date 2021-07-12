@@ -41,6 +41,7 @@ import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
 import org.cyclops.integrateddynamics.api.block.IVariableContainer;
 import org.cyclops.integrateddynamics.api.evaluate.EvaluationException;
 import org.cyclops.integrateddynamics.api.evaluate.variable.IValue;
+import org.cyclops.integrateddynamics.api.network.INetwork;
 import org.cyclops.integrateddynamics.api.network.INetworkElement;
 import org.cyclops.integrateddynamics.api.network.INetworkEventListener;
 import org.cyclops.integrateddynamics.api.network.event.INetworkEvent;
@@ -490,15 +491,17 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     public static void refreshFacePartNetwork(World world, BlockPos pos) { //refresh the network of parts on the 6 face of access proxy block
         for (Direction offset : Direction.values()) {
             try {
+                INetwork network = NetworkHelpers.getNetwork(world, pos.offset(offset), null).orElse(null);
+                if (network != null && !network.isKilled()) continue;
                 PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset), offset.getOpposite()));
                 if (partStateHolder != null) {
                     if (ModList.get().isLoaded("integratedtunnels")) {
                         if (partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
-                            NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
+                            NetworkHelpers.initNetwork(world, pos.offset(offset), null);
                         }
                     }
                     if (partStateHolder.getPart() instanceof PartTypeBlockReader) {
-                        NetworkHelpers.initNetwork(world, pos.offset(offset), offset.getOpposite());
+                        NetworkHelpers.initNetwork(world, pos.offset(offset), null);
                     }
                 }
             } catch (NullPointerException | ConcurrentModificationException e) {
