@@ -1,33 +1,30 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        maven { url = 'https://repo.spongepowered.org/maven' }
-        maven { url = "https://plugins.gradle.org/m2/" }
+        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
+        maven { url = 'https://maven.minecraftforge.net' }
         mavenCentral()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '4.1.+', changing: true
-        classpath "com.github.jengelman.gradle.plugins:shadow:4.0.4"
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        classpath 'org.spongepowered:mixingradle:0.7.+'
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
 // Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
-apply plugin: "java"
-apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: 'org.spongepowered.mixin'
 
-version = "${version}"
-group = 'com.shblock.integrated_proxy' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = 'integrated_proxy-1.16'
+version = '1.18.1-1.0'
+group = 'com.shblock.integratedproxy' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = 'integrated_proxy'
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
+// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 minecraft {
-    // The mappings can be changed at any time, and must be in the following format.
+    // The mappings can be changed at any time and must be in the following format.
     // Channel:   Version:
     // snapshot   YYYYMMDD   Snapshot are built nightly.
     // stable     #          Stables are built at the discretion of the MCP team.
@@ -36,13 +33,11 @@ minecraft {
     // You must be aware of the Mojang license when using the 'official' mappings.
     // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
     //
-    // Use non-default mappings at your own risk. they may not always work.
+    // Use non-default mappings at your own risk. They may not always work.
     // Simply re-run your setup task after changing the mappings to update your workspace.
-//    mappings channel: 'official', version: '1.16.5'
-    mappings channel: 'snapshot', version: '20201028-1.16.3'
-    // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
-    
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    mappings channel: 'official', version: '1.18.1'
+
+    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg') // Currently, this location cannot be changed from the default.
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
@@ -50,10 +45,8 @@ minecraft {
         client {
             workingDirectory project.file('run')
 
-            arg "-mixin.config=mixins.integrated_proxy.json"
-
             // Recommended logging data for a userdev environment
-            // The markers can be changed as needed. 
+            // The markers can be added/remove as needed separated by commas.
             // "SCAN": For mods scan.
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
@@ -69,15 +62,17 @@ minecraft {
                     source sourceSets.main
                 }
             }
+
+            lazyToken('minecraft_classpath') {
+                configurations.modLib.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+            }
         }
 
         server {
             workingDirectory project.file('run')
 
-            arg "-mixin.config=mixins.integrated_proxy.json"
-
             // Recommended logging data for a userdev environment
-            // The markers can be changed as needed. 
+            // The markers can be added/remove as needed separated by commas.
             // "SCAN": For mods scan.
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
@@ -92,6 +87,10 @@ minecraft {
                 examplemod {
                     source sourceSets.main
                 }
+            }
+
+            lazyToken('minecraft_classpath') {
+                configurations.modLib.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
             }
         }
 
@@ -99,7 +98,7 @@ minecraft {
             workingDirectory project.file('run')
 
             // Recommended logging data for a userdev environment
-            // The markers can be changed as needed. 
+            // The markers can be added/remove as needed separated by commas.
             // "SCAN": For mods scan.
             // "REGISTRIES": For firing of registry events.
             // "REGISTRYDUMP": For getting the contents of all registries.
@@ -118,123 +117,104 @@ minecraft {
                     source sourceSets.main
                 }
             }
+
+            lazyToken('minecraft_classpath') {
+                configurations.modLib.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+            }
         }
     }
+}
+
+configurations {
+    modLib
+    implementation.extendsFrom modLib
 }
 
 // Include resources generated by data generators.
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    maven {
-        name = "Cyclops Repo"
-        url = "https://oss.jfrog.org/artifactory/simple/libs-release/"
-    }
-    maven {
-        //url = "https://repo.spongepowered.org/repository/maven-public"
-        url = "https://repo.spongepowered.org/maven"
-    }
-    maven {
-        url = "file:/C:/Users/shBLOCK/.gradle/caches/forge_gradle/bundeled_repo"
-    }
+    mavenCentral()
+    mavenLocal()
+
+    // Put repositories for dependencies here
+    // ForgeGradle automatically adds the Forge maven and Maven Central for you
+
+    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so:
+     flatDir {
+         dir 'libs'
+     }
 }
 
 dependencies {
-    // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
-    // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
+    // Specify the version of Minecraft to use. If this is any group other than 'net.minecraft', it is assumed
+    // that the dep is a ForgeGradle 'patcher' dependency, and its patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
-    minecraft 'net.minecraftforge:forge:1.16.5-36.1.0'
+    minecraft 'net.minecraftforge:forge:1.18.1-39.0.8'
 
-    annotationProcessor 'org.spongepowered:mixin:0.8:processor'
+    // Real mod deobf dependency examples - these get remapped to your current mappings
+    // compileOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}:api") // Adds JEI API as a compile dependency
+    // runtimeOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}") // Adds the full JEI mod as a runtime dependency
+    // implementation fg.deobf("com.tterrag.registrate:Registrate:MC${mc_version}-${registrate_version}") // Adds registrate as a dependency
 
-    // You may put jars on which you depend on in ./libs or you may define them like so..
-    // compile "some.group:artifact:version:classifier"
-    // compile "some.group:artifact:version"
-
-    // Real examples
-    // compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
-    // compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
-
-    // The 'provided' configuration is for optional dependencies that exist at compile-time but might not at runtime.
-    // provided 'com.mod-buildcraft:buildcraft:6.0.8:dev'
-
-    // These dependencies get remapped to your current MCP mappings
-    // deobf 'com.mod-buildcraft:buildcraft:6.0.8:dev'
+    // Examples using mod jars from ./libs
+     implementation fg.deobf("org.cyclops.cyclopscore:cyclopscore:${mc_version}-1.13.0:deobf")
+     implementation fg.deobf("org.cyclops.commoncapabilities:commoncapabilities:${mc_version}-2.8.1:deobf")
+     implementation fg.deobf("org.cyclops.integrateddynamics:integrateddynamics:${mc_version}-1.10.6:deobf")
+     implementation fg.deobf("org.cyclops.integratedtunnels:integratedtunnels:${mc_version}-1.8.9:deobf")
 
     // For more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    compile ("org.spongepowered:mixin:0.8") {
-        exclude module: "asm-commons"
-        exclude module: "asm-tree"
-        exclude module: "launchwrapper"
-        exclude module: "guava"
-        exclude module: "log4j-core"
-        exclude module: "gson"
-        exclude module: "commons-io"
-    }
+    modLib "com.google.re2j:re2j:1.1"
 
-//    compile("org.cyclops.cyclopscore:CyclopsCore:${mc_version}-${cyclopscore_version}:deobf")
-//    compile("org.cyclops.commoncapabilities:CommonCapabilities:${mc_version}-${commoncapabilities_version}") {
-////        exclude group: 'org.cyclops.cyclopscore', module: 'CyclopsCore'
-//        transitive = false
-//    }
-//    compile("org.cyclops.integrateddynamics:IntegratedDynamics:${mc_version}-${integrateddynamics_version}:deobf") {
-//        exclude group: 'org.cyclops.cyclopscore', module: 'CyclopsCore'
-//        exclude group: 'org.cyclops.commoncapabilities', module: 'CommonCapabilities'
-////        transitive = false
-//    }
-    compile("org.cyclops.integratedterminals:IntegratedTerminals:${mc_version}-${integratedterminals_version}:deobf") {
-//        transitive = false
-    }
-    compile("org.cyclops.integratedtunnels:IntegratedTunnels:${mc_version}-${integratedtunnels_version}:deobf") {
-        transitive = false
-    }
-//    compile("org.cyclops.integratedcrafting:IntegratedCrafting:${mc_version}-${integratedcrafting_version}:deobf") {
-//        transitive = false
-//    }
-//    compile("org.cyclops.integrateddynamicscompat:IntegratedDynamicsCompat:${mc_version}-${integrateddynamicscompat_version}:deobf") {
-//        exclude group: 'org.cyclops.cyclopscore', module: 'CyclopsCore'
-//        exclude group: 'org.cyclops.integrateddynamics', module: 'IntegratedDynamics'
-//    }
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+
+    testImplementation "junit:junit:4.12"
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 mixin {
     add sourceSets.main, "mixins.integrated_proxy.refmap.json"
+
+    config 'mixins.integrated_proxy.json'
 }
 
-// Example for how to get properties into the manifest for reading by the runtime..
+// Example for how to get properties into the manifest for reading at runtime.
 jar {
     manifest {
         attributes([
-                "MixinConfigs": "mixins.integrated_proxy.json",
-                "Specification-Title": "integrated_proxy",
-                "Specification-Vendor": "shBLOCK",
-                "Specification-Version": "${version}",
-                "Implementation-Title": "IntegratedProxy",
-                "Implementation-Version": "${version}",
-                "Implementation-Vendor" :"shBLOCK",
+                "Specification-Title"     : "examplemod",
+                "Specification-Vendor"    : "examplemodsareus",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : "examplemodsareus",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
 }
 
-// Example configuration to allow publishing using the maven-publish task
+// Example configuration to allow publishing using the maven-publish plugin
 // This is the preferred method to reobfuscate your jar file
-jar.finalizedBy('reobfJar') 
+jar.finalizedBy('reobfJar')
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
-//publish.dependsOn('reobfJar')
+// publish.dependsOn('reobfJar')
 
-//publishing {
-//    publications {
-//        mavenJava(MavenPublication) {
-//            artifact jar
-//        }
-//    }
-//    repositories {
-//        maven {
-//            url "file:///${project.projectDir}/mcmodsrepo"
-//        }
-//    }
-//}
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}

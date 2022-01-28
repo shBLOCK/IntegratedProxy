@@ -1,6 +1,6 @@
 package com.shblock.integratedproxy.helper;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 public class BlockPosHelper {
     public static int[] blockPosToSet(BlockPos pos) {

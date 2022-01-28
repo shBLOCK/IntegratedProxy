@@ -5,7 +5,7 @@ import com.shblock.integratedproxy.inventory.container.ContainerAccessProxyConfi
 import com.shblock.integratedproxy.proxy.ClientProxy;
 import com.shblock.integratedproxy.proxy.CommonProxy;
 import com.shblock.integratedproxy.tileentity.TileAccessProxyConfig;
-import net.minecraft.item.ItemGroup;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.Mod;
@@ -28,7 +28,7 @@ public class IntegratedProxy extends ModBaseVersionable<IntegratedProxy> {
     }
 
     @Override
-    public ItemGroup constructDefaultItemGroup() {
+    protected CreativeModeTab constructDefaultCreativeModeTab() {
         return new ItemGroupMod(this, () -> IPRegistryEntries.ITEM_ACCESS_PROXY);
     }
 

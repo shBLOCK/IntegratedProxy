@@ -3,12 +3,12 @@ package com.shblock.integratedproxy.inventory.container;
 import com.shblock.integratedproxy.IPRegistryEntries;
 import com.shblock.integratedproxy.helper.DimPosHelper;
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.text.IFormattableTextComponent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.ValueNotifierHelpers;
 import org.cyclops.cyclopscore.inventory.container.InventoryContainer;
@@ -31,11 +31,11 @@ public class ContainerAccessProxy extends InventoryContainer {
     public final int lastZErrorId;
     public final int lastDisplayErrorId;
 
-    public ContainerAccessProxy(int id, PlayerInventory playerInventory) {
-        this(id, playerInventory, new Inventory(4), Optional.empty());
+    public ContainerAccessProxy(int id, Inventory playerInventory) {
+        this(id, playerInventory, new SimpleContainer(4), Optional.empty());
     }
 
-    public ContainerAccessProxy(int id, PlayerInventory playerInventory, IInventory inventory, Optional<TileAccessProxy> tileSupplier) {
+    public ContainerAccessProxy(int id, Inventory playerInventory, Container inventory, Optional<TileAccessProxy> tileSupplier) {
         super(IPRegistryEntries.CONTAINER_ACCESS_PROXY, id, playerInventory, inventory);
         this.tileSupplier = tileSupplier;
         for (int i = 0;i < 4;i++) {
@@ -64,10 +64,10 @@ public class ContainerAccessProxy extends InventoryContainer {
 //    }
 
     @Override
-    public void detectAndSendChanges() {
-        super.detectAndSendChanges();
+    public void broadcastChanges() {//?
+        super.broadcastChanges();
         tileSupplier.ifPresent(tile -> {
-            ValueNotifierHelpers.setValue(this, lastTilePosNBTId, DimPosHelper.toNBT(DimPos.of(tile.getWorld(), tile.getPos())));
+            ValueNotifierHelpers.setValue(this, lastTilePosNBTId, DimPosHelper.toNBT(DimPos.of(tile.getLevel(), tile.getBlockPos())));
             ValueNotifierHelpers.setValue(this, lastXOkId, tile.variableIntegerOk(tile.evaluator_x) ? 1 : 0);
             ValueNotifierHelpers.setValue(this, lastYOkId, tile.variableIntegerOk(tile.evaluator_y) ? 1 : 0);
             ValueNotifierHelpers.setValue(this, lastZOkId, tile.variableIntegerOk(tile.evaluator_z) ? 1 : 0);
@@ -79,13 +79,8 @@ public class ContainerAccessProxy extends InventoryContainer {
         });
     }
 
-    @Override
-    public boolean canInteractWith(PlayerEntity playerIn) {
-        return true;
-    }
-
     public DimPos getTilePos() {
-        return DimPosHelper.fromNBT((CompoundNBT) ValueNotifierHelpers.getValueNbt(this, lastTilePosNBTId));
+        return DimPosHelper.fromNBT((CompoundTag) ValueNotifierHelpers.getValueNbt(this, lastTilePosNBTId));
     }
 
     public boolean variableOk(int valueId) {
@@ -96,7 +91,7 @@ public class ContainerAccessProxy extends InventoryContainer {
     protected void initializeValues() {
         tileSupplier.ifPresent(tile -> {
             ValueNotifierHelpers.setValue(this, lastPosModeValueId, tile.pos_mode);
-            ValueNotifierHelpers.setValue(this, lastTilePosNBTId, DimPosHelper.toNBT(DimPos.of(tile.getWorld(), tile.getPos())));
+            ValueNotifierHelpers.setValue(this, lastTilePosNBTId, DimPosHelper.toNBT(DimPos.of(tile.getLevel(), tile.getBlockPos())));
             ValueNotifierHelpers.setValue(this, lastXOkId, tile.variableIntegerOk(tile.evaluator_x) ? 1 : 0);
             ValueNotifierHelpers.setValue(this, lastYOkId, tile.variableIntegerOk(tile.evaluator_y) ? 1 : 0);
             ValueNotifierHelpers.setValue(this, lastZOkId, tile.variableIntegerOk(tile.evaluator_z) ? 1 : 0);
@@ -112,15 +107,15 @@ public class ContainerAccessProxy extends InventoryContainer {
         return ValueNotifierHelpers.getValueInt(this, lastPosModeValueId);
     }
 
-    public List<IFormattableTextComponent> getErrors(int id) {
+    public List<MutableComponent> getErrors(int id) {
         return ValueNotifierHelpers.getValueTextComponentList(this, id);
     }
 
     @Override
-    public void onUpdate(int valueId, CompoundNBT value) {
+    public void onUpdate(int valueId, CompoundTag value) {
         super.onUpdate(valueId, value);
         tileSupplier.ifPresent(tile -> {
-            if (!tile.getWorld().isRemote) {
+            if (!tile.getLevel().isClientSide) {
                 if (valueId == lastPosModeValueId) {
                     tile.pos_mode = getLastPosModeValue();
                 }

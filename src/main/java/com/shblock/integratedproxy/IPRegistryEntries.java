@@ -4,8 +4,8 @@ import com.shblock.integratedproxy.block.BlockAccessProxy;
 import com.shblock.integratedproxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integratedproxy.item.ItemBlockAccessProxy;
 import com.shblock.integratedproxy.tileentity.TileAccessProxy;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.ObjectHolder;
 
 public class IPRegistryEntries {
@@ -16,8 +16,8 @@ public class IPRegistryEntries {
     public static final BlockAccessProxy BLOCK_ACCESS_PROXY = null;
 
     @ObjectHolder(IntegratedProxy.MODID + ":access_proxy")
-    public static final TileEntityType<TileAccessProxy> TILE_ACCESS_PROXY = null;
+    public static final BlockEntityType<TileAccessProxy> TILE_ACCESS_PROXY = null;
 
     @ObjectHolder(IntegratedProxy.MODID + ":access_proxy")
-    public static final ContainerType<ContainerAccessProxy> CONTAINER_ACCESS_PROXY = null;
+    public static final MenuType<ContainerAccessProxy> CONTAINER_ACCESS_PROXY = null;
 }

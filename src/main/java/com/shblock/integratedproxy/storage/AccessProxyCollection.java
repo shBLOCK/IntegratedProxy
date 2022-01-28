@@ -2,45 +2,45 @@ package com.shblock.integratedproxy.storage;
 
 import com.shblock.integratedproxy.IntegratedProxy;
 import com.shblock.integratedproxy.helper.BlockPosHelper;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.IntArrayNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.DimensionSavedDataManager;
-import net.minecraft.world.storage.WorldSavedData;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntArrayTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-public class AccessProxyCollection extends WorldSavedData {
+public class AccessProxyCollection extends SavedData {
     public static final String NAME = IntegratedProxy.MODID + "_access_proxy_collection";
     private HashMap<BlockPos, BlockPos> map = new HashMap<>();
 
-    public AccessProxyCollection(String name) {
-        this();
-    }
-
     public AccessProxyCollection() {
-        super(NAME);
     }
 
-    public static AccessProxyCollection getInstance(World world) {
-        DimensionSavedDataManager storage = ((ServerWorld) world).getSavedData();
-        return storage.getOrCreate(AccessProxyCollection::new, NAME);
+    public static AccessProxyCollection getInstance(Level world) {
+        DimensionDataStorage storage = ((ServerLevel) world).getDataStorage();
+        AccessProxyCollection data = storage.get(AccessProxyCollection::load, NAME);
+        if (data == null) {
+            data = new AccessProxyCollection();
+            storage.set(NAME, data);
+        }
+        return data;
     }
 
     public void set(BlockPos proxy, BlockPos target) {
         this.map.put(proxy, target);
-        markDirty();
+        setDirty();
     }
 
     public void remove(BlockPos proxy) {
         this.map.remove(proxy);
-        markDirty();
+        setDirty();
     }
 
     //get a list of access proxies that's pointing to the target pos
@@ -56,22 +56,23 @@ public class AccessProxyCollection extends WorldSavedData {
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT compound) {
-        ListNBT list = new ListNBT();
+    public CompoundTag save(CompoundTag compound) {
+        ListTag list = new ListTag();
         for (Map.Entry<BlockPos, BlockPos> entry : this.map.entrySet()) {
-            list.add(new IntArrayNBT(BlockPosHelper.blockPosToSet(entry.getKey())));
-            list.add(new IntArrayNBT(BlockPosHelper.blockPosToSet(entry.getValue())));
+            list.add(new IntArrayTag(BlockPosHelper.blockPosToSet(entry.getKey())));
+            list.add(new IntArrayTag(BlockPosHelper.blockPosToSet(entry.getValue())));
         }
         compound.put("map", list);
         return compound;
     }
 
-    @Override
-    public void read(CompoundNBT nbt) {
-        this.map = new HashMap<>();
-        ListNBT list = nbt.getList("map", Constants.NBT.TAG_INT_ARRAY);
+    public static AccessProxyCollection load(CompoundTag nbt) {
+        AccessProxyCollection collection = new AccessProxyCollection();
+        collection.map = new HashMap<>();
+        ListTag list = nbt.getList("map", Tag.TAG_INT_ARRAY);
         for (int i = 0;i < list.size() / 2;i++) {
-            this.map.put(BlockPosHelper.setToBlockPos(list.getIntArray(i)), BlockPosHelper.setToBlockPos(list.getIntArray(i + 1)));
+            collection.map.put(BlockPosHelper.setToBlockPos(list.getIntArray(i)), BlockPosHelper.setToBlockPos(list.getIntArray(i + 1)));
         }
+        return collection;
     }
 }

@@ -8,33 +8,34 @@ import com.shblock.integratedproxy.id_network.AccessProxyNetworkElement;
 import com.shblock.integratedproxy.inventory.container.ContainerAccessProxy;
 import com.shblock.integratedproxy.network.packet.*;
 import com.shblock.integratedproxy.storage.AccessProxyCollection;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
-import org.apache.logging.log4j.Level;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.cyclopscore.helper.MinecraftHelpers;
 import org.cyclops.cyclopscore.inventory.SimpleInventory;
+import org.cyclops.cyclopscore.inventory.container.InventoryContainer;
 import org.cyclops.cyclopscore.persist.IDirtyMarkListener;
 import org.cyclops.cyclopscore.persist.nbt.NBTClassType;
 import org.cyclops.integrateddynamics.api.block.IDynamicRedstone;
@@ -50,6 +51,7 @@ import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkE
 import org.cyclops.integrateddynamics.capability.networkelementprovider.NetworkElementProviderSingleton;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerConfig;
 import org.cyclops.integrateddynamics.capability.variablecontainer.VariableContainerDefault;
+import org.cyclops.integrateddynamics.core.blockentity.BlockEntityCableConnectableInventory;
 import org.cyclops.integrateddynamics.core.evaluate.InventoryVariableEvaluator;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueHelpers;
 import org.cyclops.integrateddynamics.core.evaluate.variable.ValueTypeInteger;
@@ -59,7 +61,6 @@ import org.cyclops.integrateddynamics.core.helper.PartHelpers;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementAddEvent;
 import org.cyclops.integrateddynamics.core.network.event.NetworkElementRemoveEvent;
 import org.cyclops.integrateddynamics.core.network.event.VariableContentsUpdatedEvent;
-import org.cyclops.integrateddynamics.core.tileentity.TileCableConnectableInventory;
 import org.cyclops.integrateddynamics.item.ItemVariable;
 import org.cyclops.integrateddynamics.part.PartTypeBlockReader;
 import org.cyclops.integratedtunnels.core.part.PartTypeInterfacePositionedAddon;
@@ -67,7 +68,7 @@ import org.cyclops.integratedtunnels.core.part.PartTypeInterfacePositionedAddon;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class TileAccessProxy extends TileCableConnectableInventory implements IDirtyMarkListener, INetworkEventListener<AccessProxyNetworkElement>, INamedContainerProvider {
+public class TileAccessProxy extends BlockEntityCableConnectableInventory implements IDirtyMarkListener, INetworkEventListener<AccessProxyNetworkElement>, MenuProvider {
 
     public static final int SLOT_X = 0;
     public static final int SLOT_Y = 1;
@@ -89,13 +90,13 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     private int[] strong_powers = new int[]{0, 0, 0, 0, 0, 0};
     public boolean disable_render = false;
 
-    public TileAccessProxy() {
-        super(IPRegistryEntries.TILE_ACCESS_PROXY,4, 1);
+    public TileAccessProxy(BlockPos blockPos, BlockState blockState) {
+        super(IPRegistryEntries.TILE_ACCESS_PROXY, blockPos, blockState,4, 1);
         getInventory().addDirtyMarkListener(this);
 
         addCapabilityInternal(NetworkElementProviderConfig.CAPABILITY, LazyOptional.of(() -> new NetworkElementProviderSingleton() {
             @Override
-            public INetworkElement createNetworkElement(World world, BlockPos blockPos) {
+            public INetworkElement createNetworkElement(Level world, BlockPos blockPos) {
                 return new AccessProxyNetworkElement(DimPos.of(world, blockPos));
             }
         }));
@@ -111,17 +112,17 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     protected SimpleInventory createInventory(int inventorySize, int stackSize) {
         return new SimpleInventory(inventorySize, stackSize) {
             @Override
-            public boolean isItemValidForSlot(int i, ItemStack stack) {
-                return super.isItemValidForSlot(i, stack) && stack.getItem() instanceof ItemVariable;
+            public boolean canPlaceItem(int i, ItemStack stack) {
+                return super.canPlaceItem(i, stack) && stack.getItem() instanceof ItemVariable;//TODO: fix the issue here?
             }
 
             @Override
-            public boolean canInsertItem(int index, ItemStack itemStackIn, @Nullable Direction direction) {
+            public boolean canPlaceItemThroughFace(int index, ItemStack itemStackIn, @Nullable Direction direction) {
                 return false;
             }
 
             @Override
-            public boolean canExtractItem(int index, ItemStack stack, Direction direction) {
+            public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) {
                 return false;
             }
 
@@ -148,13 +149,15 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     @Override
-    public CompoundNBT writeToItemStack(CompoundNBT tag) {
-        return new CompoundNBT();
+    public CompoundTag writeToItemStack(CompoundTag tag) {
+        return new CompoundTag();
     }
 
+
+
     @Override
-    public CompoundNBT write(CompoundNBT tag) {
-        tag = super.write(tag);
+    public CompoundTag save(CompoundTag tag) {
+        tag = super.save(tag);
         tag.putInt("pos_mode", this.pos_mode);
         NBTClassType.writeNbt(List.class, "errors_x", evaluator_x.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_y", evaluator_y.getErrors(), tag);
@@ -174,7 +177,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     }
 
     @Override
-    public void read(CompoundNBT tag) {
+    public void read(CompoundTag tag) {
         super.read(tag);
         this.pos_mode = tag.getInt("pos_mode");
         this.evaluator_x.setErrors(NBTClassType.readNbt(List.class, "errors_x", tag));
@@ -182,7 +185,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         this.evaluator_z.setErrors(NBTClassType.readNbt(List.class, "errors_z", tag));
         this.evaluator_display.setErrors(NBTClassType.readNbt(List.class, "errors_display", tag));
         this.display_rotations = tag.getIntArray("display_rotations");
-        if (tag.contains("displayValue", Constants.NBT.TAG_COMPOUND)) {
+        if (tag.contains("displayValue", Tag.TAG_COMPOUND)) {
             setDisplayValue(ValueHelpers.deserialize(tag.getCompound("displayValue")));
         } else {
             setDisplayValue(null);
@@ -214,14 +217,14 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         if (this.display_rotations[ord] >= 4) {
             this.display_rotations[ord] = 0;
         }
-        markDirty();
-        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations));
+        setChanged();
+        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisplayRotationPacket(DimPos.of(this.level, this.worldPosition), this.display_rotations));
     }
 
     public void changeDisableRender() {
         this.disable_render = !this.disable_render;
-        markDirty();
-        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render));
+        setChanged();
+        IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisableRenderPacket(DimPos.of(this.level, this.worldPosition), this.disable_render));
     }
 
     protected void refreshVariables(boolean sendVariablesUpdateEvent) {
@@ -239,49 +242,49 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         if (BlockAccessProxyConfig.range < 0) {
             return false;
         }
-        return Math.abs(target.getX() - this.pos.getX()) > BlockAccessProxyConfig.range ||
-                Math.abs(target.getY() - this.pos.getY()) > BlockAccessProxyConfig.range ||
-                Math.abs(target.getZ() - this.pos.getZ()) > BlockAccessProxyConfig.range;
+        return Math.abs(target.getX() - this.worldPosition.getX()) > BlockAccessProxyConfig.range ||
+                Math.abs(target.getY() - this.worldPosition.getY()) > BlockAccessProxyConfig.range ||
+                Math.abs(target.getZ() - this.worldPosition.getZ()) > BlockAccessProxyConfig.range;
     }
 
     private void updateTarget() {
-        if (!this.world.isRemote) {
-            DimPos old_target = this.target == null ? null : DimPos.of(this.target.getWorldKey(), this.target.getBlockPos());
+        if (!this.level.isClientSide) {
+            DimPos old_target = this.target == null ? null : DimPos.of(this.target.getLevel(), this.target.getBlockPos());
             try {
                 if (this.pos_mode == 1) {
                     this.target = DimPos.of(
-                            this.world,
+                            this.level,
                             new BlockPos(
-                                    isVariableAvailable(this.evaluator_x) ? getVariableIntValue(this.evaluator_x) : this.pos.getX(),
-                                    isVariableAvailable(this.evaluator_y) ? getVariableIntValue(this.evaluator_y) : this.pos.getY(),
-                                    isVariableAvailable(this.evaluator_z) ? getVariableIntValue(this.evaluator_z) : this.pos.getZ()
+                                    isVariableAvailable(this.evaluator_x) ? getVariableIntValue(this.evaluator_x) : this.worldPosition.getX(),
+                                    isVariableAvailable(this.evaluator_y) ? getVariableIntValue(this.evaluator_y) : this.worldPosition.getY(),
+                                    isVariableAvailable(this.evaluator_z) ? getVariableIntValue(this.evaluator_z) : this.worldPosition.getZ()
                             )
                     );
                 } else {
                     this.target = DimPos.of(
-                            this.world,
+                            this.level,
                             new BlockPos(
-                                    isVariableAvailable(this.evaluator_x) ? getVariableIntValue(this.evaluator_x) + this.pos.getX() : this.pos.getX(),
-                                    isVariableAvailable(this.evaluator_y) ? getVariableIntValue(this.evaluator_y) + this.pos.getY() : this.pos.getY(),
-                                    isVariableAvailable(this.evaluator_z) ? getVariableIntValue(this.evaluator_z) + this.pos.getZ() : this.pos.getZ()
+                                    isVariableAvailable(this.evaluator_x) ? getVariableIntValue(this.evaluator_x) + this.worldPosition.getX() : this.worldPosition.getX(),
+                                    isVariableAvailable(this.evaluator_y) ? getVariableIntValue(this.evaluator_y) + this.worldPosition.getY() : this.worldPosition.getY(),
+                                    isVariableAvailable(this.evaluator_z) ? getVariableIntValue(this.evaluator_z) + this.worldPosition.getZ() : this.worldPosition.getZ()
                             )
                     );
                 }
             } catch (EvaluationException e) {
-                this.target = DimPos.of(this.world, this.pos);
+                this.target = DimPos.of(this.level, this.worldPosition);
             }
 
             if (isTargetOutOfRange(this.target.getBlockPos())) {
-                this.target = DimPos.of(this.world, this.pos);
+                this.target = DimPos.of(this.level, this.worldPosition);
             }
 
             if (!this.target.equals(old_target)) {
                 if (old_target != null) notifyTargetChange();
-                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target));
-                AccessProxyCollection.getInstance(this.world).set(this.pos, this.target.getBlockPos());
+                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyRenderPacket(DimPos.of(this.level, this.worldPosition), this.target));
+                AccessProxyCollection.getInstance(this.level).set(this.worldPosition, this.target.getBlockPos());
                 updateTargetBlock();
                 if (old_target != null) {
-                    updateTargetBlock(this.world, old_target.getBlockPos());
+                    updateTargetBlock(this.level, old_target.getBlockPos());
                 }
             }
         }
@@ -324,17 +327,17 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         int[] old_strong = this.strong_powers.clone();
         int[] old_power = this.redstone_powers.clone();
         if (cap != null) {
-            this.redstone_powers[side.getIndex()] = cap.getRedstoneLevel();
-            if (cap.isStrong()) {
-                this.strong_powers[side.getIndex()] = cap.getRedstoneLevel();
+            this.redstone_powers[side.get3DDataValue()] = cap.getRedstoneLevel();
+            if (cap.isDirect()) {
+                this.strong_powers[side.get3DDataValue()] = cap.getRedstoneLevel();
             } else {
-                this.strong_powers[side.getIndex()] = 0;
+                this.strong_powers[side.get3DDataValue()] = 0;
             }
         } else {
-            this.redstone_powers[side.getIndex()] = 0;
-            this.strong_powers[side.getIndex()] = 0;
+            this.redstone_powers[side.get3DDataValue()] = 0;
+            this.strong_powers[side.get3DDataValue()] = 0;
         }
-        markDirty();
+        setChanged();
         return this.redstone_powers != old_power || this.strong_powers != old_strong;
     }
 
@@ -356,7 +359,7 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @Override
     public void onDirty() {
-        if (!this.world.isRemote) {
+        if (!this.level.isClientSide) {
             refreshVariables(true);
         }
     }
@@ -378,8 +381,8 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
 
     public void sendRemoveRenderPacket() {
-        if (!this.world.isRemote) {
-            IntegratedProxy._instance.getPacketHandler().sendToAll(new RemoveProxyRenderPacket(DimPos.of(this.world, this.pos)));
+        if (!this.level.isClientSide) {
+            IntegratedProxy._instance.getPacketHandler().sendToAll(new RemoveProxyRenderPacket(DimPos.of(this.level, this.worldPosition)));
         }
     }
 
@@ -387,33 +390,31 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
         MinecraftForge.EVENT_BUS.unregister(this);
     }
 
-    @Override
-    protected void updateTileEntity() {
-        super.updateTileEntity();
-        if (this.shouldSendUpdateEvent && this.getNetwork() != null) {
-            this.shouldSendUpdateEvent = false;
-            this.refreshVariables(true);
+    public static void updateTileEntity(Level level, BlockPos pos, BlockState blockState, TileAccessProxy tile) {
+        if (tile.shouldSendUpdateEvent && tile.getNetwork() != null) {
+            tile.shouldSendUpdateEvent = false;
+            tile.refreshVariables(true);
         }
-        if (!world.isRemote) {
+        if (!level.isClientSide) {
             boolean is_dirty = false;
             try {
-                IValue value = this.evaluator_display.getVariable(getNetwork()).getValue();
-                if (value != getDisplayValue()) {
+                IValue value = tile.evaluator_display.getVariable(tile.getNetwork()).getValue();
+                if (value != tile.getDisplayValue()) {
                     is_dirty = true;
                 }
-                setDisplayValue(value);
+                tile.setDisplayValue(value);
             } catch (EvaluationException | NullPointerException e) {
-                if (this.display_value != null) {
+                if (tile.display_value != null) {
                     is_dirty = true;
                 }
-                setDisplayValue(null);
+                tile.setDisplayValue(null);
             }
             if (is_dirty) {
-                markDirty();
-                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()));
+                tile.setChanged();
+                IntegratedProxy._instance.getPacketHandler().sendToAll(new UpdateProxyDisplayValuePacket(DimPos.of(tile.level, tile.worldPosition), tile.getDisplayValue()));
             }
 
-            updateTarget();
+            tile.updateTarget();
         }
     }
 
@@ -451,20 +452,20 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
             return;
         }
         try {
-            if (!event.getPlayer().world.isRemote) {
-                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.world, this.pos), this.target), (ServerPlayerEntity) event.getPlayer());
-                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.world, this.pos), getDisplayValue()), (ServerPlayerEntity) event.getPlayer());
-                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.world, this.pos), this.display_rotations), (ServerPlayerEntity) event.getPlayer());
-                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisableRenderPacket(DimPos.of(this.world, this.pos), this.disable_render), (ServerPlayerEntity) event.getPlayer());
+            if (!event.getPlayer().level.isClientSide) {
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyRenderPacket(DimPos.of(this.level, this.worldPosition), this.target), (ServerPlayer) event.getPlayer());
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayValuePacket(DimPos.of(this.level, this.worldPosition), getDisplayValue()), (ServerPlayer) event.getPlayer());
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisplayRotationPacket(DimPos.of(this.level, this.worldPosition), this.display_rotations), (ServerPlayer) event.getPlayer());
+                IntegratedProxy._instance.getPacketHandler().sendToPlayer(new UpdateProxyDisableRenderPacket(DimPos.of(this.level, this.worldPosition), this.disable_render), (ServerPlayer) event.getPlayer());
             }
         } catch (NullPointerException e) {
-            IntegratedProxy.clog(Level.ERROR, "Failed to sync proxy render data with client!");
+            IntegratedProxy.clog(org.apache.logging.log4j.Level.ERROR, "Failed to sync proxy render data with client!");
         }
     }
 
-    public static void updateAfterBlockDestroy(World world, BlockPos pos) {
+    public static void updateAfterBlockDestroy(Level world, BlockPos pos) {
         for (Direction offset : Direction.values()) {
-            world.neighborChanged(pos.offset(offset), IPRegistryEntries.BLOCK_ACCESS_PROXY, pos);
+            world.neighborChanged(pos.offset(offset.getNormal()), IPRegistryEntries.BLOCK_ACCESS_PROXY, pos);
         }
 //        refreshFacePartNetwork(world, pos);
     }
@@ -476,65 +477,65 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
                 return;
             }
             for (Direction offset : Direction.values()) {
-                this.world.neighborChanged(this.pos.offset(offset), getBlockState().getBlock(), this.pos);
+                this.level.neighborChanged(this.worldPosition.offset(offset.getNormal()), getBlockState().getBlock(), this.worldPosition);
             }
             refreshFacePartNetwork();
         } catch (NullPointerException e) {
-            IntegratedProxy.clog(Level.WARN, "NullPointerException at onTargetChanged!   " + this.target.toString() + "   " + this.world.toString());
+            IntegratedProxy.clog(org.apache.logging.log4j.Level.WARN, "NullPointerException at onTargetChanged!   " + this.target.toString() + "   " + this.level.toString());
         }
     }
 
     public void refreshFacePartNetwork() { //refresh the network of parts on the 6 face of access proxy block
-        refreshFacePartNetwork(this.world, this.pos);
+        refreshFacePartNetwork(this.level, this.worldPosition);
     }
 
-    public static void refreshFacePartNetwork(World world, BlockPos pos) { //refresh the network of parts on the 6 face of access proxy block
+    public static void refreshFacePartNetwork(Level world, BlockPos pos) { //refresh the network of parts on the 6 face of access proxy block
         for (Direction offset : Direction.values()) {
             try {
-                INetwork network = NetworkHelpers.getNetwork(world, pos.offset(offset), null).orElse(null);
+                INetwork network = NetworkHelpers.getNetwork(world, pos.offset(offset.getNormal()), null).orElse(null);
                 if (network != null && !network.isKilled()) continue;
-                PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset), offset.getOpposite()));
+                PartHelpers.PartStateHolder partStateHolder = PartHelpers.getPart(PartPos.of(world, pos.offset(offset.getNormal()), offset.getOpposite()));
                 if (partStateHolder != null) {
                     if (ModList.get().isLoaded("integratedtunnels")) {
                         if (partStateHolder.getPart() instanceof PartTypeInterfacePositionedAddon) {
-                            NetworkHelpers.initNetwork(world, pos.offset(offset), null);
+                            NetworkHelpers.initNetwork(world, pos.offset(offset.getNormal()), null);
                         }
                     }
                     if (partStateHolder.getPart() instanceof PartTypeBlockReader) {
-                        NetworkHelpers.initNetwork(world, pos.offset(offset), null);
+                        NetworkHelpers.initNetwork(world, pos.offset(offset.getNormal()), null);
                     }
                 }
             } catch (NullPointerException | ConcurrentModificationException e) {
-                IntegratedProxy.clog(Level.WARN, "refreshFacePartNetwork failed");
+                IntegratedProxy.clog(org.apache.logging.log4j.Level.WARN, "refreshFacePartNetwork failed");
                 e.printStackTrace();
             }
         }
     }
 
-    public void updateTargetBlock(World world, BlockPos pos) {
+    public void updateTargetBlock(Level world, BlockPos pos) {
 //        world.notifyNeighborsOfStateChange(pos, world.getBlockState(pos).getBlock());
 //        for (Direction side : Direction.values()) {
 //            world.notifyNeighborsOfStateChange(pos.offset(side), world.getBlockState(pos).getBlock());
 //        }
-        if (!world.isBlockLoaded(pos)) return;
+        if (!world.isLoaded(pos)) return;
         for (Direction facing : Direction.values()) {
-            world.neighborChanged(pos, world.getBlockState(pos).getBlock(), pos.offset(facing));
+            world.neighborChanged(pos, world.getBlockState(pos).getBlock(), pos.offset(facing.getNormal()));
         }
         for (Direction facing : Direction.values()) {
-            if (world.getBlockState(pos.offset(facing)).getBlock() instanceof BlockAccessProxy) continue;
-            world.neighborChanged(pos.offset(facing), world.getBlockState(pos.offset(facing)).getBlock(), pos);
+            if (world.getBlockState(pos.offset(facing.getNormal())).getBlock() instanceof BlockAccessProxy) continue;
+            world.neighborChanged(pos.offset(facing.getNormal()), world.getBlockState(pos.offset(facing.getNormal())).getBlock(), pos);
         }
     }
 
     public void updateTargetBlock() {
-        updateTargetBlock(this.world, this.target.getBlockPos());
+        updateTargetBlock(this.level, this.target.getBlockPos());
     }
 
-    public void onTargetChanged(IWorld world, BlockPos pos) {
-        if (this.target == null || isRemoved() || this.target.getBlockPos() == this.pos) {
+    public void onTargetChanged(LevelAccessor world, BlockPos pos) {
+        if (this.target == null || isRemoved() || this.target.getBlockPos() == this.worldPosition) {
             return;
         }
-        if (pos.equals(this.target.getBlockPos()) && world.equals(this.world)) {
+        if (pos.equals(this.target.getBlockPos()) && world.equals(this.level)) {
             notifyTargetChange();
         }
     }
@@ -542,11 +543,11 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
     @SubscribeEvent
     public void onNeighborNotifyEvent(BlockEvent.NeighborNotifyEvent event) {
         if (this.target != null && !isRemoved()) {
-            if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.world)) {
+            if (event.getPos().equals(this.target.getBlockPos()) && event.getWorld().equals(this.level)) {
                 onTargetChanged(event.getWorld(), event.getPos());
             }
             for (Direction facing : event.getNotifiedSides()) {
-                BlockPos offset_pos = event.getPos().offset(facing);
+                BlockPos offset_pos = event.getPos().offset(facing.getNormal());
                 if (offset_pos.equals(this.target.getBlockPos())) {
                     onTargetChanged(event.getWorld(), offset_pos);
                 }
@@ -556,25 +557,24 @@ public class TileAccessProxy extends TileCableConnectableInventory implements ID
 
     @SubscribeEvent
     public void onCropGrowEvent(BlockEvent.CropGrowEvent.Post event) {
-        if (!event.getWorld().isRemote()) {
+        if (!event.getWorld().isClientSide()) {
             onTargetChanged(event.getWorld(), event.getPos());
         }
     }
 
     @SubscribeEvent
-    public void onServerStop(FMLServerStoppingEvent event) {
+    public void onServerStop(ServerStoppingEvent event) {
         unRegisterEventHandle();
     }
 
     @Override
-    public ITextComponent getDisplayName() {
-        return new TranslationTextComponent("tile.blocks.integrated_proxy.access_proxy.name");
+    public Component getDisplayName() {
+        return new TranslatableComponent("tile.blocks.integrated_proxy.access_proxy.name");
     }
 
     @Nullable
     @Override
-    public Container createMenu(int id, PlayerInventory playerInventory, PlayerEntity playerEntity) {
+    public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player playerEntity) {
         return new ContainerAccessProxy(id, playerInventory, this.getInventory(), Optional.of(this));
     }
-    //TODO:rs_writer, light_panel
 }

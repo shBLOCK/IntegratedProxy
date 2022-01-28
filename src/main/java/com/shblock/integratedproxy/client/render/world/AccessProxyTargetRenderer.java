@@ -1,20 +1,23 @@
 package com.shblock.integratedproxy.client.render.world;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Vector3d;
+import com.mojang.math.Vector3f;
 import com.shblock.integratedproxy.client.data.AccessProxyClientData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.math.vector.Vector3f;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.client.event.RenderLevelLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.cyclops.cyclopscore.datastructure.DimPos;
 import org.cyclops.integrateddynamics.api.client.render.valuetype.IValueTypeWorldRenderer;
@@ -25,71 +28,73 @@ import java.util.Map;
 
 public class AccessProxyTargetRenderer {
     @SubscribeEvent
-    public static void onRender(RenderWorldLastEvent event) {
+    public static void onRender(RenderLevelLastEvent event) {
         RenderSystem.disableTexture();
         RenderSystem.blendFuncSeparate(
-                GlStateManager.SourceFactor.SRC_ALPHA.param,
-                GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA.param,
-                GlStateManager.SourceFactor.ONE.param,
-                GlStateManager.DestFactor.ZERO.param
+                GlStateManager.SourceFactor.SRC_ALPHA,
+                GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                GlStateManager.SourceFactor.ONE,
+                GlStateManager.DestFactor.ZERO
         );
 
-        float partialTicks = event.getPartialTicks();
-        Vector3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
+        float partialTicks = event.getPartialTick();
+        Vec3 projectedView = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 
-        IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
-        IVertexBuilder builder = buffer.getBuffer(RenderType.LINES);
-        MatrixStack matrixStack = event.getMatrixStack();
-        matrixStack.push();
+        MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
+        VertexConsumer builder = buffer.getBuffer(RenderType.LINES);
+        PoseStack matrixStack = event.getPoseStack();
+        matrixStack.pushPose();
         matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
 
         for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
             DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
 
-            if (target.getWorldKey().equals(Minecraft.getInstance().world.getDimensionKey()) && !AccessProxyClientData.getInstance().getDisable(proxy)) {
-                AxisAlignedBB bb = new AxisAlignedBB(
+            if (target.getLevelKey().equals(Minecraft.getInstance().level.dimension()) && !AccessProxyClientData.getInstance().getDisable(proxy)) {
+                AABB bb = new AABB(
                         new BlockPos(
                             target.getBlockPos().getX(),
                             target.getBlockPos().getY(),
                             target.getBlockPos().getZ()
                         )
-                ).expand(0.01, 0.01, 0.01).expand(-0.01, -0.01, -0.01);
-                WorldRenderer.drawBoundingBox(event.getMatrixStack(), builder, bb, 0.17F, 0.8F, 0.69F, 0.8F);
+                ).expandTowards(0.01, 0.01, 0.01).expandTowards(-0.01, -0.01, -0.01);
+                LevelRenderer.renderLineBox(event.getPoseStack(), builder, bb, 0.17F, 0.8F, 0.69F, 0.8F);
             }
         }
-        matrixStack.pop();
+        matrixStack.popPose();
         RenderSystem.enableTexture();
-        buffer.finish(RenderType.LINES);
+        buffer.endBatch(RenderType.LINES);
 
-        matrixStack.push();
+        matrixStack.pushPose();
         for (Map.Entry<DimPos, DimPos> entry : AccessProxyClientData.getInstance().getTargetMap().entrySet()) {
             DimPos proxy = entry.getKey();
             DimPos target = entry.getValue();
             IValue value = AccessProxyClientData.getInstance().getVariable(proxy);
             int[] rotation = AccessProxyClientData.getInstance().getRotation(proxy);
-            if (rotation == null) {
+            if (rotation == null || rotation.length == 0) {
                 rotation = new int[]{0, 0, 0, 0, 0, 0};
             }
 
             if (value != null) {
                 for (Direction facing : Direction.values()) {
-                    matrixStack.push();
+                    matrixStack.pushPose();
 
                     float scale = 0.08F;
                     matrixStack.translate(-projectedView.x + target.getBlockPos().getX(), -projectedView.y + target.getBlockPos().getY(), -projectedView.z + target.getBlockPos().getZ());
                     translateToFacing(matrixStack, facing);
                     matrixStack.scale(scale, scale, scale);
                     rotateSide(matrixStack, facing, rotation);
-                    matrixStack.rotate(Vector3f.ZP.rotationDegrees(180));
+                    matrixStack.mulPose(Vector3f.ZP.rotationDegrees(180));
                     rotateToFacing(matrixStack, facing);
 
                     IValueTypeWorldRenderer renderer = ValueTypeWorldRenderers.REGISTRY.getRenderer(value.getType());
                     if (renderer == null) {
                         renderer = ValueTypeWorldRenderers.DEFAULT;
                     }
+
+                    Minecraft mc = Minecraft.getInstance();
                     renderer.renderValue(
-                            TileEntityRendererDispatcher.instance,
+                        new BlockEntityRendererProvider.Context(mc.getBlockEntityRenderDispatcher(), mc.getBlockRenderer(), mc.getEntityModels(), mc.font),
                             null,
                             facing,
                             null,
@@ -97,19 +102,19 @@ public class AccessProxyTargetRenderer {
                             partialTicks,
                             matrixStack,
                             buffer,
-                            LightTexture.packLight(15, 15),
+                            LightTexture.pack(15, 15),
                             OverlayTexture.NO_OVERLAY,
                             1.0F
                     );
-                    matrixStack.pop();
+                    matrixStack.popPose();
                 }
             }
         }
-        matrixStack.pop();
-        buffer.finish();
+        matrixStack.popPose();
+        buffer.endBatch();
     }
 
-    private static void translateToFacing(MatrixStack matrixStack, Direction facing) {
+    private static void translateToFacing(PoseStack matrixStack, Direction facing) {
         switch (facing) {
             case DOWN:
                 matrixStack.translate(1, -0.015F, 0);
@@ -132,7 +137,7 @@ public class AccessProxyTargetRenderer {
         }
     }
 
-    private static void rotateToFacing(MatrixStack matrixStack, Direction facing) {
+    private static void rotateToFacing(PoseStack matrixStack, Direction facing) {
         short rotationY = 0;
         short rotationX = 0;
         if (facing == Direction.SOUTH) {
@@ -148,40 +153,40 @@ public class AccessProxyTargetRenderer {
         } else if (facing == Direction.DOWN) {
             rotationX = 90;
         }
-        matrixStack.rotate(Vector3f.YP.rotationDegrees(rotationY));
-        matrixStack.rotate(Vector3f.XP.rotationDegrees(rotationX));
+        matrixStack.mulPose(Vector3f.YP.rotationDegrees(rotationY));
+        matrixStack.mulPose(Vector3f.XP.rotationDegrees(rotationX));
     }
 
-    private static void rotateSide(MatrixStack matrixStack, Direction side, int[] rotation) {
+    private static void rotateSide(PoseStack matrixStack, Direction side, int[] rotation) {
         switch (side) {
             case UP:
                 matrixStack.translate(-6.25F, 0, -6.25F);
-                matrixStack.rotate(Vector3f.YP.rotationDegrees(rotation[1] * 90));
+                matrixStack.mulPose(Vector3f.YP.rotationDegrees(rotation[1] * 90));
                 matrixStack.translate(6.25F, 0, 6.25F);
                 break;
             case DOWN:
                 matrixStack.translate(-6.25F, 0, 6.25F);
-                matrixStack.rotate(Vector3f.YP.rotationDegrees(rotation[0] * 90));
+                matrixStack.mulPose(Vector3f.YP.rotationDegrees(rotation[0] * 90));
                 matrixStack.translate(6.25F, 0, -6.25F);
                 break;
             case NORTH:
                 matrixStack.translate(6.25F, -6.25F, 0);
-                matrixStack.rotate(Vector3f.ZP.rotationDegrees(rotation[3] * 90));
+                matrixStack.mulPose(Vector3f.ZP.rotationDegrees(rotation[3] * 90));
                 matrixStack.translate(-6.25F, 6.25F, 0);
                 break;
             case SOUTH:
                 matrixStack.translate(-6.25F, -6.25F, 0);
-                matrixStack.rotate(Vector3f.ZP.rotationDegrees(rotation[2] * 90));
+                matrixStack.mulPose(Vector3f.ZP.rotationDegrees(rotation[2] * 90));
                 matrixStack.translate(6.25F, 6.25F, 0);
                 break;
             case WEST:
                 matrixStack.translate(0, -6.25F, 6.25F);
-                matrixStack.rotate(Vector3f.XP.rotationDegrees(rotation[4] * 90));
+                matrixStack.mulPose(Vector3f.XP.rotationDegrees(rotation[4] * 90));
                 matrixStack.translate(0, 6.25F, -6.25F);
                 break;
             case EAST:
                 matrixStack.translate(0, -6.25F, -6.25F);
-                matrixStack.rotate(Vector3f.XP.rotationDegrees(rotation[5] * 90));
+                matrixStack.mulPose(Vector3f.XP.rotationDegrees(rotation[5] * 90));
                 matrixStack.translate(0, 6.25F, 6.25F);
                 break;
         }
