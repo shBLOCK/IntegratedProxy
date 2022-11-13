@@ -117,7 +117,12 @@ public class ContainerAccessProxy extends InventoryContainer {
         tileSupplier.ifPresent(tile -> {
             if (!tile.getLevel().isClientSide) {
                 if (valueId == lastPosModeValueId) {
+                    int oldPosMode = tile.pos_mode;
                     tile.pos_mode = getLastPosModeValue();
+
+                    if (tile.pos_mode != oldPosMode) {
+                        tile.setChanged();
+                    }
                 }
             }
         });

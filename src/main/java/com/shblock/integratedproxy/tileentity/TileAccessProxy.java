@@ -156,8 +156,8 @@ public class TileAccessProxy extends BlockEntityCableConnectableInventory implem
 
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
-        tag = super.save(tag);
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         tag.putInt("pos_mode", this.pos_mode);
         NBTClassType.writeNbt(List.class, "errors_x", evaluator_x.getErrors(), tag);
         NBTClassType.writeNbt(List.class, "errors_y", evaluator_y.getErrors(), tag);
@@ -172,8 +172,6 @@ public class TileAccessProxy extends BlockEntityCableConnectableInventory implem
         tag.putIntArray("rs_power", this.redstone_powers);
         tag.putIntArray("strong_power", this.strong_powers);
         tag.putBoolean("disable_render", this.disable_render);
-
-        return tag;
     }
 
     @Override
