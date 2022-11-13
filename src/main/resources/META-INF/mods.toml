@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[39,)"
+loaderVersion="[40.1.0,)"
 license="MIT"
 issueTrackerURL="https://github.com/shBLOCK/IntegratedProxy/issues"
 displayURL="https://www.curseforge.com/minecraft/mc-mods/integrated_proxy"
@@ -8,7 +8,7 @@ authors="shBLOCK"
 
 [[mods]]
 modId="integrated_proxy"
-version="1.1"
+version="1.1.1"
 displayName="IntegratedProxy"
 description='''
 An addon for Integrated Dynamics that allows you to redirect the part's target to another position.
@@ -16,24 +16,24 @@ An addon for Integrated Dynamics that allows you to redirect the part's target t
 [[dependencies.integrated_proxy]]
     modId="forge"
     mandatory=true
-    versionRange="[39,)"
+    versionRange="[40.1.0,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.integrated_proxy]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.18.1,1.19)"
+    versionRange="[1.18.2,1.19)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.integrated_proxy]]
     modId="cyclopscore"
     mandatory=true
-    versionRange="[1.13.0,)"
+    versionRange="[1.16.0,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.integrated_proxy]]
     modId="integrateddynamics"
     mandatory=true
-    versionRange="[1.10.6,)"
+    versionRange="[1.11.13,)"
     ordering="NONE"
     side="BOTH"
