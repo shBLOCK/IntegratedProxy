@@ -1,6 +1,8 @@
 IntegratedProxy
 ==================
 
+# This mod is not being maintained anymore, please use [Forked Proxy](https://www.curseforge.com/minecraft/mc-mods/forked-proxy) for 1.12.2. For 1.19 or higher, IntegratedDynamics has a builtin way to do what this mod does.
+
 Integrated Proxy is an addon mod for [Integrated Dynamics](https://www.curseforge.com/minecraft/mc-mods/integrated-dynamics "Integrated Dynamics"). It allows you to redirect the part's target to another position.  
 
 How to Use
